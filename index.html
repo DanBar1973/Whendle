@@ -1,15 +1,302 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Whendle — Bornle Mode</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whendle — Births (Bornle)</title>
+<meta name="description" content="Guess the birth year. Learn history. 50% of ad revenue donated to Wikipedia.">
+<meta property="og:title" content="Whendle — Births (Bornle)">
+<meta property="og:description" content="Guess the birth year. Learn history. 50% of ad revenue donated to Wikipedia.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/6/6f/Beethoven.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #151923;
+    --text: #e8ecf1;
+    --muted: #9aa3b2;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --accent: #60a5fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background: radial-gradient(1200px 900px at 20% -10%, #1b2130 0%, var(--bg) 60%);
+    color: var(--text);
+    display: grid;
+    place-items: start center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+  .container { width: min(820px, 100%); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .brand { font-weight: 800; letter-spacing: 0.3px; display: flex; gap: 8px; align-items: center; }
+  .brand small { color: var(--muted); font-weight: 600; }
+  .card {
+    background: linear-gradient(180deg, #1a2231, var(--card));
+    border: 1px solid #1f2634;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .col { display: grid; gap: 8px; flex: 1 1 300px; }
+  .muted { color: var(--muted); }
+  img.portrait {
+    width: 100%; height: auto; border-radius: 12px; border: 1px solid #263043;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35); background: #0c0e14; object-fit: cover; aspect-ratio: 16/10;
+  }
+  h2 { margin: 8px 0 4px 0; font-size: 1.4rem; }
+  .pill {
+    font-size: 0.9rem; background: #0f1420; border: 1px solid #1f2634; color: var(--muted);
+    padding: 6px 10px; border-radius: 999px;
+  }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  input[type="text"] {
+    background: #0f1420; color: var(--text); border: 1px solid #263043; padding: 10px 12px; border-radius: 10px;
+    outline: none; width: 120px; font-size: 1.2rem; letter-spacing: 1px;
+  }
+  button {
+    background: linear-gradient(180deg,#3b82f6,#2563eb);
+    border: 1px solid #1e40af; color: white; padding: 10px 14px; border-radius: 10px; font-weight: 600; cursor: pointer;
+  }
+  button.secondary { background: #0f1420; border: 1px solid #263043; color: var(--text); }
+  .lamps { display: flex; gap: 12px; font-weight: 700; }
+  .lamp { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; }
+  .lamp.green { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.35); }
+  .lamp.amber { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.35); }
+  .lamp.red   { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35); }
+  .grid { display: grid; gap: 8px; margin-top: 12px; }
+  .guess-row {
+    display: grid; align-items: center; gap: 10px; padding: 10px;
+    grid-template-columns: auto 1fr auto; border: 1px solid #20283a; border-radius: 12px; background: #0e1320;
+  }
+  .year { font-weight: 800; letter-spacing: 1px; }
+  .hint { min-width: 120px; text-align: left; color: var(--muted); font-size: 0.9rem; }
+  .summary { white-space: pre-wrap; line-height: 1.45; }
+  .footer { margin-top: 20px; font-size: 0.9rem; color: var(--muted); text-align: center; }
+  select, label { background: #0f1420; color: var(--text); border: 1px solid #263043; padding: 8px 10px; border-radius: 8px; }
+  label { border: none; padding: 0; }
+  .status { margin-top: 10px; font-weight: 700; }
+  .success { color: var(--green); }
+  .error   { color: var(--red); }
+  .ribbon { font-size: .85rem; color: var(--muted); }
+</style>
 </head>
 <body>
-  <h1>📅 Whendle — Births (Bornle mode)</h1>
-  <p>This is the static starter version. Open index.html in your browser to play.</p>
-  <script>
-    alert("Whendle static starter loaded. Replace this alert with game code!");
-  </script>
+<div class="container">
+  <header>
+    <div class="brand">📅 Whendle <small>— Births (Bornle)</small></div>
+    <div class="controls">
+      <label class="muted" for="mode">Mode</label>
+      <select id="mode">
+        <option>Daily</option>
+        <option>Random</option>
+      </select>
+      <label><input type="checkbox" id="hintToggle" checked> Warmer/Cooler</label>
+      <button id="newRound" class="secondary">New round</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <div class="col">
+        <img class="portrait" id="portrait" alt="portrait" src="">
+      </div>
+      <div class="col">
+        <h2 id="personName">Person</h2>
+        <div class="muted">Guess the 4-digit birth year. You have 6 tries. Lamps are fixed-position counts only. Optional "Warmer/Cooler" compares to your <em>previous</em> guess by absolute distance in years (ties → "No change").</div>
+        <div style="height:8px;"></div>
+        <div class="controls">
+          <input id="yearInput" type="text" inputmode="numeric" pattern="\\d{4}" placeholder="e.g. 1879" maxlength="4">
+          <button id="submitBtn">Submit guess</button>
+        </div>
+        <div id="status" class="status"></div>
+        <div id="history" class="grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reveal" class="card" style="display:none; margin-top:12px;">
+    <div class="pill">About this person</div>
+    <div id="summary" class="summary" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="footer ribbon">Whendle will always be free. <strong>50% of ad revenue</strong> donated to Wikipedia.</div>
+</div>
+
+<script>
+// ===== Dataset (CE-only sample) =====
+const PEOPLE = [
+  { name: "Albert Einstein", year: 1879, img: "https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg",
+    summary: "Albert Einstein (1879–1955) was a German-born theoretical physicist who developed the theory of relativity and made foundational contributions to quantum mechanics." },
+  { name: "Marie Curie", year: 1867, img: "https://upload.wikimedia.org/wikipedia/commons/7/7e/Marie_Curie_c._1920s.jpg",
+    summary: "Marie Skłodowska Curie (1867–1934) was a pioneering physicist and chemist, the first woman to win a Nobel Prize and the only person to win in two different sciences." },
+  { name: "William Shakespeare", year: 1564, img: "https://upload.wikimedia.org/wikipedia/commons/a/a2/Shakespeare.jpg",
+    summary: "William Shakespeare (1564–1616) was an English playwright and poet, widely regarded as the greatest writer in the English language." },
+  { name: "Nelson Mandela", year: 1918, img: "https://upload.wikimedia.org/wikipedia/commons/0/0c/Nelson_Mandela-2008_%28edit%29.jpg",
+    summary: "Nelson Mandela (1918–2013) was a South African anti-apartheid revolutionary and statesman who served as President of South Africa (1994–1999)." },
+  { name: "Ada Lovelace", year: 1815, img: "https://upload.wikimedia.org/wikipedia/commons/0/0f/Ada_Lovelace_portrait.jpg",
+    summary: "Ada Lovelace (1815–1852) was an English mathematician often regarded as the first computer programmer for her work on Charles Babbage’s Analytical Engine." },
+  { name: "Beyoncé", year: 1981, img: "https://upload.wikimedia.org/wikipedia/commons/1/18/Beyonc%C3%A9_-_Crazy_in_Love%2C_2011.jpg",
+    summary: "Beyoncé (born 1981) is an American singer, songwriter, and performer, one of the best-selling music artists of all time." },
+  { name: "Lionel Messi", year: 1987, img: "https://upload.wikimedia.org/wikipedia/commons/2/29/Lionel-Messi-Argentina-2022-FIFA-World-Cup.jpg",
+    summary: "Lionel Messi (born 1987) is an Argentine professional footballer widely regarded as one of the greatest players of all time." },
+  { name: "Taylor Swift", year: 1989, img: "https://upload.wikimedia.org/wikipedia/commons/f/f2/Taylor_Swift_Reputation_Stadium_Tour3_%28cropped%29.jpg",
+    summary: "Taylor Swift (born 1989) is an American singer-songwriter known for narrative songwriting and record-breaking tours." },
+  { name: "Isaac Newton", year: 1643, img: "https://upload.wikimedia.org/wikipedia/commons/d/d4/Sir_Isaac_Newton_%281642-1727%29.jpg",
+    summary: "Isaac Newton (1643–1727) was an English mathematician, physicist, and astronomer who formulated the laws of motion and universal gravitation." },
+  { name: "Nikola Tesla", year: 1856, img: "https://upload.wikimedia.org/wikipedia/commons/d/d4/N.Tesla.JPG",
+    summary: "Nikola Tesla (1856–1943) was a Serbian-American inventor and engineer known for AC power systems and numerous innovations." },
+  { name: "Alan Turing", year: 1912, img: "https://upload.wikimedia.org/wikipedia/commons/a/a1/Alan_Turing_Aged_16.jpg",
+    summary: "Alan Turing (1912–1954) was an English mathematician and pioneer of computer science and codebreaking." },
+  { name: "Frida Kahlo", year: 1907, img: "https://upload.wikimedia.org/wikipedia/commons/1/1e/Frida_Kahlo%2C_by_Guillermo_Kahlo.jpg",
+    summary: "Frida Kahlo (1907–1954) was a Mexican painter known for self-portraits and themes of identity." },
+  { name: "Barack Obama", year: 1961, img: "https://upload.wikimedia.org/wikipedia/commons/8/8d/President_Barack_Obama.jpg",
+    summary: "Barack Obama (born 1961) was the 44th U.S. President." },
+  { name: "Stephen Hawking", year: 1942, img: "https://upload.wikimedia.org/wikipedia/commons/e/eb/Stephen_Hawking.StarChild.jpg",
+    summary: "Stephen Hawking (1942–2018) was an English theoretical physicist known for work on black holes and cosmology." },
+];
+
+function pad4(n){ return n.toString().padStart(4,"0"); }
+
+// ===== Scoring (fixed-position counts) =====
+function score(answer, guess){
+  const greensMask = [0,1,2,3].map(i => answer[i] === guess[i]);
+  const greens = greensMask.filter(Boolean).length;
+  const remAns = {}, remGue = {};
+  for (let i=0;i<4;i++){
+    if (!greensMask[i]){
+      remAns[answer[i]] = (remAns[answer[i]]||0)+1;
+      remGue[guess[i]]  = (remGue[guess[i]]||0)+1;
+    }
+  }
+  let ambers = 0;
+  for (const d in remGue){ ambers += Math.min(remGue[d]||0, remAns[d]||0); }
+  const reds = 4 - greens - ambers;
+  return {green:greens, amber:ambers, red:reds};
+}
+function lampHTML(res){
+  return `<div class="lamps">
+    <span class="lamp green">🟩 ${res.green}</span>
+    <span class="lamp amber">🟨 ${res.amber}</span>
+    <span class="lamp red">🟥 ${res.red}</span>
+  </div>`;
+}
+
+// ===== Warmer/Cooler (absolute distance only, ties => No change) =====
+function temperatureHint(answerYear, prevGuess, newGuess) {
+  const prevAbs = Math.abs(answerYear - prevGuess);
+  const currAbs = Math.abs(answerYear - newGuess);
+  if (currAbs < prevAbs) return "Warmer 🔥";
+  if (currAbs > prevAbs) return "Cooler 🧊";
+  return "No change ◼︎";
+}
+
+// ===== Selection helpers =====
+function todayIndex(){
+  const d = new Date();
+  const seed = Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);
+  return seed % PEOPLE.length;
+}
+
+let state = { mode: "Daily", person: null, answer: "", guesses: [], results: [], over: false, win: false };
+
+function pickPerson(mode){
+  const idx = (mode==="Daily") ? todayIndex() : Math.floor(Math.random()*PEOPLE.length);
+  const p = PEOPLE[idx];
+  state.person = p;
+  state.answer = pad4(p.year);
+  state.guesses = [];
+  state.results = [];
+  state.over = false;
+  state.win = false;
+  document.getElementById("personName").textContent = p.name;
+  document.getElementById("portrait").src = p.img;
+  document.getElementById("history").innerHTML = "";
+  document.getElementById("status").textContent = "";
+  document.getElementById("reveal").style.display = "none";
+  document.getElementById("summary").textContent = "";
+}
+
+// ===== Wikipedia summary =====
+async function fetchSummary(name, fallback){
+  try {
+    const url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(name);
+    const resp = await fetch(url, {mode:"cors"});
+    if (resp.ok){
+      const data = await resp.json();
+      if (data && data.extract) return data.extract;
+    }
+  } catch(e){}
+  return fallback || "";
+}
+
+// ===== History rows =====
+function addHistoryRow(guess, res, hint){
+  const row = document.createElement("div");
+  row.className = "guess-row";
+  const hintText = (hint && hint.trim()) ? hint : " ";
+  row.innerHTML = `<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${hintText}</span>`;
+  document.getElementById("history").prepend(row);
+}
+
+// ===== Finish round =====
+async function finishRound(){
+  const status = document.getElementById("status");
+  if (state.win){
+    status.className = "status success";
+    status.textContent = `Correct! ${state.person.name} was born in ${state.answer}.`;
+  } else {
+    status.className = "status error";
+    status.textContent = `Out of tries! The correct year was ${state.answer}.`;
+  }
+  const reveal = document.getElementById("reveal");
+  const summaryEl = document.getElementById("summary");
+  const text = await fetchSummary(state.person.name, state.person.summary);
+  summaryEl.textContent = text || "(No summary available.)";
+  reveal.style.display = "block";
+}
+
+// ===== Submit guess =====
+function submitGuess(){
+  if (state.over) return;
+  const inp = document.getElementById("yearInput");
+  const v = (inp.value || "").trim();
+  const status = document.getElementById("status");
+  if (!/^\d{4}$/.test(v)){
+    status.className = "status";
+    status.textContent = "Please enter exactly 4 digits (e.g., 1879).";
+    return;
+  }
+  let hint = "";
+  if (document.getElementById("hintToggle").checked && state.guesses.length > 0) {
+    hint = temperatureHint(Number(state.answer), Number(state.guesses[state.guesses.length-1]), Number(v));
+  }
+  const res = score(state.answer, v);
+  state.guesses.push(v);
+  state.results.push(res);
+  addHistoryRow(v, res, hint);
+  inp.value = "";
+  if (res.green === 4){
+    state.over = true; state.win = true; finishRound();
+  } else if (state.guesses.length >= 6){
+    state.over = true; state.win = false; finishRound();
+  }
+}
+
+// ===== Wire up =====
+document.getElementById("submitBtn").addEventListener("click", submitGuess);
+document.getElementById("yearInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") submitGuess(); });
+document.getElementById("newRound").addEventListener("click", ()=>{ pickPerson(document.getElementById("mode").value); });
+document.getElementById("mode").addEventListener("change", (e)=>{ pickPerson(e.target.value); });
+
+// Start
+pickPerson(state.mode);
+</script>
 </body>
 </html>
