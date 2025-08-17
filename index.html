@@ -1,53 +1,48 @@
+
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Whendle — Events (Eventle)</title>
+<title>Whendle — Births (Bornle)</title>
 <style>
-  :root { --bg:#0f1115; --card:#151923; --text:#e8ecf1; --muted:#9aa3b2; --green:#22c55e; --amber:#f59e0b; --red:#ef4444; }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:radial-gradient(1200px 900px at 20% -10%,#1b2130 0%,var(--bg) 60%);color:var(--text);display:grid;place-items:start center;min-height:100vh;padding:16px}
-  .container{width:min(860px,100%)}
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  :root { --bg:#0f1115; --card:#151923; --text:#e8ecf1; --muted:#9aa3b2; --accent:#60a5fa; --green:#22c55e; --amber:#f59e0b; --red:#ef4444; }
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:radial-gradient(1200px 900px at 20% -10%,#1b2130 0%,var(--bg) 60%);color:var(--text);display:grid;place-items:start center;min-height:100vh;padding:16px}
+  .container{width:min(860px,100%)} header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
   nav a{color:var(--text);text-decoration:none;padding:6px 10px;border-radius:10px;border:1px solid #1f2634;background:#0f1420}
   nav a.active{border-color:#2563eb;color:#93c5fd}
   .card{background:linear-gradient(180deg,#1a2231,var(--card));border:1px solid #1f2634;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
-  .col{display:grid;gap:8px;flex:1 1 300px}
+  .row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}.col{display:grid;gap:8px;flex:1 1 300px}.muted{color:var(--muted)}
   img.portrait{width:100%;border-radius:12px;border:1px solid #263043;object-fit:cover;aspect-ratio:16/10;object-position:50% 18%;background:#0c0e14}
-  .muted{color:var(--muted)}
-  h2.title{margin:4px 0 2px 0;font-size:1.35rem}
-  .rules{margin:0;padding-left:18px}.rules li{margin:2px 0}
   input[type=text]{background:#0f1420;color:var(--text);border:1px solid #263043;padding:10px 12px;border-radius:10px;width:120px;font-size:1.1rem;letter-spacing:1px}
   button{background:linear-gradient(180deg,#3b82f6,#2563eb);border:1px solid #1e40af;color:white;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
   button.secondary{background:#0f1420;border:1px solid #263043;color:var(--text)}
   .lamps{display:flex;gap:12px;font-weight:700}.lamp{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:10px}
   .lamp.green{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.35)}.lamp.amber{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35)}.lamp.red{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35)}
-  .grid{display:grid;gap:8px;margin-top:12px}
-  .guess-row{display:grid;align-items:center;gap:10px;padding:10px;grid-template-columns:auto 1fr auto;border:1px solid #20283a;border-radius:12px;background:#0e1320}
+  .grid{display:grid;gap:8px;margin-top:12px}.guess-row{display:grid;align-items:center;gap:10px;padding:10px;grid-template-columns:auto 1fr auto;border:1px solid #20283a;border-radius:12px;background:#0e1320}
   .year{font-weight:800;letter-spacing:1px}.hint{min-width:120px;text-align:left;color:var(--muted);font-size:.9rem}.status{margin-top:10px;font-weight:700}.success{color:var(--green)}.error{color:var(--red)}
+  h2.title{margin:4px 0 2px 0;font-size:1.35rem}
+  .rules{margin:0;padding-left:18px}
+  .rules li{margin:2px 0}
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1 style="font-size:1.4rem;margin:0;">📅 Whendle — Events (Eventle)</h1>
+    <h1 style="font-size:1.4rem;margin:0;">📅 Whendle — Births (Bornle)</h1>
     <nav>
-      <a href="/index.html">Births</a>
-      <a class="active" href="/events.html">Events</a>
+      <a class="active" href="/index.html">Births</a>
+      <a href="/events.html">Events</a>
     </nav>
   </header>
 
   <div class="card">
     <div class="row">
+      <div class="col"><img class="portrait" id="portrait" alt="" src=""></div>
       <div class="col">
-        <img class="portrait" id="portrait" alt="" src="">
-      </div>
-      <div class="col">
-        <h2 id="title" class="title">Event Name</h2>
+        <h2 id="title" class="title">Person Name</h2>
         <ul class="rules muted">
-          <li>Guess the <strong>4‑digit event year</strong>. </li>
+          <li>Guess the <strong>4‑digit birth year</strong>. </li>
           <li>You get <strong>6 tries</strong>.</li>
           <li>Lamps show counts only: <br>🟩 right number, right place</br><br>🟨 right number wrong place</br><br>🟥 wrong number</br></li>
           <li><em>Warmer</em>🔥<em>/Cooler</em>🧊 hints compare to your previous guess (ties show “No change ◼︎)”.</li>
@@ -56,7 +51,7 @@
           <label class="muted" for="mode">Mode</label>
           <select id="mode"><option>Daily</option><option>Random</option></select>
           <label><input type="checkbox" id="hintToggle" checked> Warmer/Cooler</label>
-          <input id="yearInput" type="text" inputmode="numeric" pattern="\\d{4}" placeholder="e.g. 1989" maxlength="4">
+          <input id="yearInput" type="text" inputmode="numeric" pattern="\\d{4}" placeholder="e.g. 1879" maxlength="4">
           <button id="submitBtn">Submit guess</button>
           <button id="newRound" class="secondary">New round</button>
         </div>
@@ -67,102 +62,37 @@
   </div>
 
   <div id="reveal" class="card" style="display:none; margin-top:12px;">
-    <div style="font-size:.9rem;background:#0f1420;border:1px solid #1f2634;color:var(--muted);padding:6px 10px;border-radius:999px;display:inline-block;">About this event</div>
+    <div style="font-size:.9rem;background:#0f1420;border:1px solid #1f2634;color:var(--muted);padding:6px 10px;border-radius:999px;display:inline-block;">About this person</div>
     <div id="summary" style="margin-top:8px;white-space:pre-wrap;line-height:1.45;"></div>
   </div>
 </div>
 
 <script>
-const PLACEHOLDER='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#1a2231"/><stop offset="100%" stop-color="#0e1320"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9aa3b2" font-family="Arial" font-size="42">Image unavailable</text></svg>`);
-
-const EVENTS=[
- {name:"Fall of the Berlin Wall",year:1989,img:"https://upload.wikimedia.org/wikipedia/commons/3/3f/Berlin_Wall_Brandenburger_Tor.jpg",summary:"The Berlin Wall fell in 1989, leading to German reunification and symbolizing the end of the Cold War."},
- {name:"First Moon Landing (Apollo 11)",year:1969,img:"https://upload.wikimedia.org/wikipedia/commons/a/a1/Aldrin_Apollo_11.jpg",summary:"Apollo 11 landed on the Moon in 1969; Neil Armstrong and Buzz Aldrin walked on the lunar surface."},
- {name:"World Wide Web proposed",year:1989,img:"https://upload.wikimedia.org/wikipedia/commons/5/5f/Tim_Berners-Lee%2C_Vienna_2009.jpg",summary:"Tim Berners-Lee proposed the World Wide Web in 1989 at CERN, leading to the modern web."},
- {name:"First Powered Flight (Wright Brothers)",year:1903,img:"https://upload.wikimedia.org/wikipedia/commons/a/a3/First_flight2.jpg",summary:"In 1903, the Wright brothers achieved the first powered, controlled flight at Kitty Hawk."},
- {name:"Penicillin discovered",year:1928,img:"https://upload.wikimedia.org/wikipedia/commons/4/4c/Alexander_Fleming_%281952%29.jpg",summary:"Alexander Fleming discovered penicillin in 1928, leading to the antibiotic era."},
- {name:"DNA double helix published",year:1953,img:"https://upload.wikimedia.org/wikipedia/commons/5/5c/DNA_model.png",summary:"Watson and Crick published the structure of DNA in 1953, based on crucial data from Rosalind Franklin and Maurice Wilkins."},
- {name:"Sputnik 1 launched",year:1957,img:"https://upload.wikimedia.org/wikipedia/commons/7/74/Sputnik_asm.jpg",summary:"The Soviet Union launched Sputnik 1 in 1957, the first artificial Earth satellite."},
- {name:"Magna Carta sealed",year:1215,img:"https://upload.wikimedia.org/wikipedia/commons/1/13/Magna_Carta_%28British_Library_Cotton_MS_Augustus_II.106%29.jpg",summary:"In 1215, Magna Carta limited the powers of the English king and influenced constitutional law."},
- {name:"American Declaration of Independence",year:1776,img:"https://upload.wikimedia.org/wikipedia/commons/6/6b/US_Declaration_of_Independence.jpg",summary:"The United States declared independence from Britain in 1776."},
- {name:"French Revolution begins (Storming of the Bastille)",year:1789,img:"https://upload.wikimedia.org/wikipedia/commons/1/10/Prise_de_la_Bastille.jpg",summary:"In 1789, the storming of the Bastille marked the start of the French Revolution."},
- {name:"Columbus reaches the Americas",year:1492,img:"https://upload.wikimedia.org/wikipedia/commons/7/7d/Columbus_Taking_Possession_of_the_New_Country.jpg",summary:"Christopher Columbus reached the Americas in 1492, initiating sustained European contact."},
- {name:"Printing press introduced in Europe (Gutenberg)",year:1450,img:"https://upload.wikimedia.org/wikipedia/commons/3/3e/Printing_press_from_1811.jpg",summary:"Around 1450, Gutenberg's movable-type printing press transformed information dissemination."},
- {name:"World War I begins",year:1914,img:"https://upload.wikimedia.org/wikipedia/commons/c/ce/German_infantry_1914.jpg",summary:"World War I began in 1914 following the July Crisis after the assassination of Archduke Franz Ferdinand."},
- {name:"World War II ends",year:1945,img:"https://upload.wikimedia.org/wikipedia/commons/4/49/Times_Square%2C_New_York_City_%28LOC_80-G-404522%29.jpg",summary:"World War II ended in 1945 with Allied victory in Europe and the Pacific."},
- {name:"First iPhone released",year:2007,img:"https://upload.wikimedia.org/wikipedia/commons/f/fa/IPhone_1st_Gen.svg",summary:"Apple released the first iPhone in 2007, catalyzing the smartphone era."}
+const PEOPLE=[
+ {name:"Albert Einstein",year:1879,img:"https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg",summary:"Albert Einstein (1879–1955) was a German-born theoretical physicist who developed the theory of relativity and made foundational contributions to quantum mechanics."},
+ {name:"Marie Curie",year:1867,img:"https://upload.wikimedia.org/wikipedia/commons/7/7e/Marie_Curie_c._1920s.jpg",summary:"Marie Skłodowska Curie (1867–1934) was a pioneering physicist and chemist, the first woman to win a Nobel Prize and the only person to win in two different sciences."},
+ {name:"William Shakespeare",year:1564,img:"https://upload.wikimedia.org/wikipedia/commons/a/a2/Shakespeare.jpg",summary:"William Shakespeare (1564–1616) was an English playwright and poet, widely regarded as the greatest writer in the English language."},
+ {name:"Nelson Mandela",year:1918,img:"https://upload.wikimedia.org/wikipedia/commons/0/0c/Nelson_Mandela-2008_%28edit%29.jpg",summary:"Nelson Mandela (1918–2013) was a South African anti-apartheid revolutionary and statesman who served as President of South Africa (1994–1999)."},
+ {name:"Ada Lovelace",year:1815,img:"https://upload.wikimedia.org/wikipedia/commons/0/0f/Ada_Lovelace_portrait.jpg",summary:"Ada Lovelace (1815–1852) was an English mathematician often regarded as the first computer programmer for her work on Charles Babbage’s Analytical Engine."},
+ {name:"Beyoncé",year:1981,img:"https://upload.wikimedia.org/wikipedia/commons/1/18/Beyonc%C3%A9_-_Crazy_in_Love%2C_2011.jpg",summary:"Beyoncé (born 1981) is an American singer, songwriter, and performer, one of the best-selling music artists of all time."},
+ {name:"Lionel Messi",year:1987,img:"https://upload.wikimedia.org/wikipedia/commons/2/29/Lionel-Messi-Argentina-2022-FIFA-World-Cup.jpg",summary:"Lionel Messi (born 1987) is an Argentine professional footballer widely regarded as one of the greatest players of all time."},
+ {name:"Taylor Swift",year:1989,img:"https://upload.wikimedia.org/wikipedia/commons/f/f2/Taylor_Swift_Reputation_Stadium_Tour3_%28cropped%29.jpg",summary:"Taylor Swift (born 1989) is an American singer-songwriter known for narrative songwriting and record-breaking tours."},
+ {name:"Isaac Newton",year:1643,img:"https://upload.wikimedia.org/wikipedia/commons/d/d4/Sir_Isaac_Newton_%281642-1727%29.jpg",summary:"Isaac Newton (1643–1727) was an English mathematician, physicist, and astronomer who formulated the laws of motion and universal gravitation."},
+ {name:"Nikola Tesla",year:1856,img:"https://upload.wikimedia.org/wikipedia/commons/d/d4/N.Tesla.JPG",summary:"Nikola Tesla (1856–1943) was a Serbian-American inventor and engineer known for AC power systems and numerous innovations."}
 ];
-
 function pad4(n){return n.toString().padStart(4,"0");}
 function score(a,g){const m=[0,1,2,3].map(i=>a[i]===g[i]);const greens=m.filter(Boolean).length;const ra={},rg={};for(let i=0;i<4;i++){if(!m[i]){ra[a[i]]=(ra[a[i]]||0)+1;rg[g[i]]=(rg[g[i]]||0)+1}}let amb=0;for(const d in rg){amb+=Math.min(rg[d]||0,ra[d]||0)}const red=4-greens-amb;return{green:greens,amber:amb,red:red}}
 function lampHTML(r){return`<div class="lamps"><span class="lamp green">🟩 ${r.green}</span><span class="lamp amber">🟨 ${r.amber}</span><span class="lamp red">🟥 ${r.red}</span></div>`}
 function temperatureHint(ans,prev,nw){const pa=Math.abs(ans-prev),ca=Math.abs(ans-nw);if(ca<pa)return"Warmer 🔥";if(ca>pa)return"Cooler 🧊";return"No change ◼︎"}
-function todayIndex(){const d=new Date();const seed=Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);return seed%EVENTS.length}
-let state={mode:"Daily",item:null,answer:"",guesses:[],results:[],over:false,win:false};
-
-function setImageWithFallback(el,src,alt){el.onerror=()=>{el.src=PLACEHOLDER;};el.alt=alt||"";el.src=src;}
-function pickEvent(mode){
-  const idx=(mode==="Daily")?todayIndex():Math.floor(Math.random()*EVENTS.length);
-  const p=EVENTS[idx];
-  state.item=p;
-  state.answer=pad4(p.year);
-  state.guesses=[]; state.results=[]; state.over=false; state.win=false;
-  setImageWithFallback(document.getElementById("portrait"),p.img,p.name);
-  document.getElementById("title").textContent=p.name;
-  document.getElementById("history").innerHTML="";
-  document.getElementById("status").textContent="";
-  document.getElementById("reveal").style.display="none";
-  document.getElementById("summary").textContent="";
-  document.title=`Whendle — Events (${p.name})`;
-}
-
-async function fetchSummary(name,fallback){
-  try{const url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(name);
-      const r=await fetch(url,{mode:"cors"}); if(r.ok){const d=await r.json(); if(d&&d.extract)return d.extract}}catch(e){}
-  return fallback||"";
-}
-
-function addHistoryRow(guess,res,hint){
-  const row=document.createElement("div"); row.className="guess-row";
-  const ht=(hint&&hint.trim())?hint:" ";
-  row.innerHTML=`<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${ht}</span>`;
-  document.getElementById("history").prepend(row);
-}
-
-async function finishRound(){
-  const s=document.getElementById("status");
-  if(state.win){ s.className="status success"; s.textContent=`Correct! “${state.item.name}” occurred in ${state.answer}.`; }
-  else{ s.className="status error"; s.textContent=`Out of tries! The correct year was ${state.answer}.`; }
-  const rev=document.getElementById("reveal");
-  const sum=document.getElementById("summary");
-  const t=await fetchSummary(state.item.name,state.item.summary);
-  sum.textContent=t||"(No summary available.)";
-  rev.style.display="block";
-}
-
-function submitGuess(){
-  if(state.over)return;
-  const inp=document.getElementById("yearInput");
-  const v=(inp.value||"").trim();
-  const s=document.getElementById("status");
-  if(!/^\d{4}$/.test(v)){ s.className="status"; s.textContent="Please enter exactly 4 digits (e.g., 1989)."; return; }
-  let hint="";
-  if(document.getElementById("hintToggle").checked && state.guesses.length>0){
-    hint=temperatureHint(Number(state.answer),Number(state.guesses[state.guesses.length-1]),Number(v));
-  }
-  const res=score(state.answer,v);
-  state.guesses.push(v); state.results.push(res);
-  addHistoryRow(v,res,hint);
-  inp.value="";
-  if(res.green===4){ state.over=true; state.win=true; finishRound(); }
-  else if(state.guesses.length>=6){ state.over=true; state.win=false; finishRound(); }
-}
-
-document.getElementById("submitBtn").addEventListener("click",submitGuess);
-document.getElementById("yearInput").addEventListener("keydown",e=>{ if(e.key==="Enter") submitGuess(); });
-document.getElementById("newRound").addEventListener("click",()=>{ pickEvent(document.getElementById("mode").value); });
-document.getElementById("mode").addEventListener("change",e=>{ pickEvent(e.target.value); });
-pickEvent(state.mode);
+function todayIndex(){const d=new Date();const seed=Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);return seed%PEOPLE.length}
+let state={mode:"Daily",person:null,answer:"",guesses:[],results:[],over:false,win:false};
+function setImageWithFallback(el,src){el.onerror=()=>{el.style.objectFit='contain';el.style.background='#0e1320';};el.src=src;}
+function pickPerson(mode){const idx=(mode==="Daily")?todayIndex():Math.floor(Math.random()*PEOPLE.length);const p=PEOPLE[idx];state.person=p;state.answer=pad4(p.year);state.guesses=[];state.results=[];state.over=false;state.win=false;setImageWithFallback(document.getElementById("portrait"),p.img);document.getElementById("history").innerHTML="";document.getElementById("status").textContent="";document.getElementById("reveal").style.display="none";document.getElementById("summary").textContent="";document.getElementById("title").textContent=p.name;document.title=`Whendle — Births (${p.name})`;}
+async function fetchSummary(name,fallback){try{const url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(name);const r=await fetch(url,{mode:"cors"});if(r.ok){const d=await r.json();if(d&&d.extract)return d.extract}}catch(e){}return fallback||""}
+function addHistoryRow(guess,res,hint){const row=document.createElement("div");row.className="guess-row";const ht=(hint&&hint.trim())?hint:" ";row.innerHTML=`<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${ht}</span>`;document.getElementById("history").prepend(row);}
+async function finishRound(){const s=document.getElementById("status");if(state.win){s.className="status success";s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`;}else{s.className="status error";s.textContent=`Out of tries! The correct year was ${state.answer}.`;}const rev=document.getElementById("reveal");const sum=document.getElementById("summary");const t=await fetchSummary(state.person.name,state.person.summary);sum.textContent=t||"(No summary available.)";rev.style.display="block";}
+function submitGuess(){if(state.over)return;const inp=document.getElementById("yearInput");const v=(inp.value||"").trim();const s=document.getElementById("status");if(!/^\d{4}$/.test(v)){s.className="status";s.textContent="Please enter exactly 4 digits (e.g., 1879).";return}let hint="";if(document.getElementById("hintToggle").checked&&state.guesses.length>0){hint=temperatureHint(Number(state.answer),Number(state.guesses[state.guesses.length-1]),Number(v))}const res=score(state.answer,v);state.guesses.push(v);state.results.push(res);addHistoryRow(v,res,hint);inp.value="";if(res.green===4){state.over=true;state.win=true;finishRound()}else if(state.guesses.length>=6){state.over=true;state.win=false;finishRound()}}
+document.getElementById("submitBtn").addEventListener("click",submitGuess);document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});document.getElementById("newRound").addEventListener("click",()=>{pickPerson(document.getElementById("mode").value)});document.getElementById("mode").addEventListener("change",e=>{pickPerson(e.target.value)});pickPerson(state.mode);
 </script>
 </body>
 </html>
