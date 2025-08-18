@@ -138,6 +138,18 @@ async function finishRound(){
   const t=await fetchSummary(state.item.name,state.item.summary);
   sum.textContent=t||"(No summary available.)";
   rev.style.display="block";
+  // After you set s.textContent = "Correct!" or "Out of tries!" inside finishRound:
+
+const boardLink = document.createElement("a");
+boardLink.href = `/leaderboard.html?type=events`;   // or ?type=events on the Events page
+boardLink.textContent = "See where you placed →";
+boardLink.style.display = "inline-block";
+boardLink.style.marginTop = "8px";
+boardLink.style.color = "#60a5fa";
+boardLink.style.fontWeight = "600";
+s.appendChild(document.createElement("br"));
+s.appendChild(boardLink);
+
 }
 
 function submitGuess(){
