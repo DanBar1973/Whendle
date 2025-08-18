@@ -97,5 +97,58 @@ async function finishRound(){const s=document.getElementById("status");if(state.
 function submitGuess(){if(state.over)return;const inp=document.getElementById("yearInput");const v=(inp.value||"").trim();const s=document.getElementById("status");if(!/^\d{4}$/.test(v)){s.className="status";s.textContent="Please enter exactly 4 digits (e.g., 1879).";return}let hint="";if(document.getElementById("hintToggle").checked&&state.guesses.length>0){hint=temperatureHint(Number(state.answer),Number(state.guesses[state.guesses.length-1]),Number(v))}const res=score(state.answer,v);state.guesses.push(v);state.results.push(res);addHistoryRow(v,res,hint);inp.value="";if(res.green===4){state.over=true;state.win=true;finishRound()}else if(state.guesses.length>=6){state.over=true;state.win=false;finishRound()}}
 document.getElementById("submitBtn").addEventListener("click",submitGuess);document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});document.getElementById("newRound").addEventListener("click",()=>{pickPerson(document.getElementById("mode").value)});document.getElementById("mode").addEventListener("change",e=>{pickPerson(e.target.value)});pickPerson(state.mode);
 </script>
+
+  <script type="module">
+  import { supabase, getDeviceId, fetchCountry, ensureUser, recordGame, buildShare } from "/js/db.js";
+
+  // 1) Identify device + capture country (optional)
+  const deviceId = getDeviceId();
+  const country = await fetchCountry();       // requires /api/country (step 5)
+  const userId = await ensureUser(deviceId, country);
+
+  // 2) Define a helper you call when the round ends
+  async function onRoundFinished({ gameType, runMode, seed, entityName, win, tries, msElapsed, results }) {
+    // Save to DB
+    await recordGame({
+      userId,
+      gameType,
+      runMode,
+      seed,
+      entityName,
+      won: win,
+      tries,
+      msElapsed,
+      rows: results    // array of {green, amber, red} per guess
+    });
+
+    // Build share text + copy (optional)
+    const shareText = buildShare({
+      title: `Whendle — ${entityName}`,
+      tries,
+      won: win,
+      rows: results,
+      url: "https://whendle.org"
+    });
+    try { await navigator.clipboard.writeText(shareText); } catch {}
+  }
+
+  // 3) Call onRoundFinished from YOUR existing finishRound()
+  // Example (tweak names to match your code):
+  // finishRound() {
+  //   const seedNum = Number(`${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}${String(new Date().getDate()).padStart(2,"0")}`);
+  //   const seed = `${seedNum}|births`; // or |events
+  //   onRoundFinished({
+  //     gameType: 'births',
+  //     runMode: document.getElementById('mode').value === 'Daily' ? 'daily' : 'practice',
+  //     seed,
+  //     entityName: state.person?.name || state.item?.name,
+  //     win: state.win,
+  //     tries: state.guesses.length,
+  //     msElapsed: null,      // wire this up later if you track it
+  //     results: state.results
+  //   });
+  // }
+</script>
+
 </body>
 </html>
