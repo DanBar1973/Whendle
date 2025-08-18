@@ -142,7 +142,18 @@ function pickPerson(mode){
   }
   const p=PEOPLE[idx];
   state.person=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false;
-  const img=document.getElementById("portrait"); img.alt=p.name; setImageWithFallback(img,p.img);
+  const img=document.getElementById("portrait");
+document.getElementById("title").textContent = p.name;
+document.title = `Whendle — Births (${p.name})`;
+
+// Try Wikipedia first
+const meta = await fetchWikiMeta(p.name);
+const imgSrc = meta?.image || p.img;
+setPortrait(img, imgSrc, p.name);
+
+// Save summary fallback into state
+state.person.summary = meta?.extract || p.summary || "";
+
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
   document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
   document.getElementById("title").textContent=p.name; document.title=`Whendle — Births (${p.name})`;
@@ -166,8 +177,52 @@ function addHistoryRow(guess,res,hint){
 
 async function finishRound(){
   const s=document.getElementById("status");
-  if(state.win){ s.className="status success"; s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`; }
-  else{ s.className="status error"; s.textContent=`Out of tries! The correct year was ${state.answer}.`; }
+  if(state.win){
+    s.className="status success";
+    s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`;
+  } else {
+    s.className="status error";
+    s.textContent=`Out of tries! The correct year was ${state.answer}.`;
+  }
+
+  // “See where you placed” link
+  const boardLink=document.createElement("a");
+  boardLink.href="/leaderboard.html?type=births";
+  boardLink.textContent="See where you placed →";
+  boardLink.style.display="inline-block";
+  boardLink.style.marginTop="8px";
+  boardLink.style.color="#60a5fa";
+  boardLink.style.fontWeight="600";
+  s.appendChild(document.createElement("br"));
+  s.appendChild(boardLink);
+
+  const rev=document.getElementById("reveal");
+  const sum=document.getElementById("summary");
+  // ✅ we already fetched and stored summary in state.person.summary during pickPerson()
+  sum.textContent = state.person.summary || "(No summary available.)";
+  rev.style.display="block";
+
+  // record game result (Supabase hook)
+  try {
+    const d=new Date();
+    const seedNum=todaySeedNumber();
+    const seed=`${seedNum}|births`;
+    const runMode=document.getElementById('mode').value==='Daily'?'daily':'practice';
+    if (window.onRoundFinished) {
+      await window.onRoundFinished({
+        gameType:'births',
+        runMode,
+        seed,
+        entityName: state.person.name,
+        win: state.win,
+        tries: state.guesses.length,
+        msElapsed: null,
+        results: state.results
+      });
+    }
+  } catch(e){ console.warn("recordGame failed (non-fatal)", e); }
+}
+
 
   // “See where you placed” link
   const boardLink=document.createElement("a");
