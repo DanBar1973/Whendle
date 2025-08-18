@@ -1,30 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Whendle — Leaderboard</title>
+<style>
+  :root { --bg:#0f1115; --card:#151923; --text:#e8ecf1; --muted:#9aa3b2; --accent:#60a5fa; }
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0f1115;color:var(--text)}
+  .container{max-width:900px;margin:0 auto;padding:16px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  nav a{color:var(--text);text-decoration:none;padding:6px 10px;border:1px solid #263043;border-radius:10px;background:#0f1420}
+  .card{background:#151923;border:1px solid #1f2634;border-radius:16px;padding:16px}
+  table{width:100%;border-collapse:separate;border-spacing:0 8px}
+  th,td{text-align:left;padding:10px 12px}
+  tr{background:#0e1320;border:1px solid #1f2634}
+  tr td:first-child, tr th:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
+  tr td:last-child, tr th:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
+  .muted{color:var(--muted)}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid #263043;background:#0f1420;color:var(--muted);cursor:pointer}
+  .pill.active{background:#2563eb;color:white;border-color:#1e40af}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:20}
+  .modal .inner{background:#151923;border:1px solid #1f2634;border-radius:12px;padding:16px;max-width:420px;width:94%}
+  input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #263043;background:#0f1420;color:var(--text)}
+  button{background:linear-gradient(180deg,#3b82f6,#2563eb);border:1px solid #1e40af;color:#fff;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
+  .btn-ghost{background:#0f1420;border:1px solid #263043;color:var(--text)}
+  .hint{font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1 style="margin:0;font-size:1.4rem;">🏆 Whendle — Leaderboard</h1>
+    <nav>
+      <a href="/index.html">Births</a>
+      <a href="/events.html">Events</a>
+    </nav>
+  </header>
+
+  <div class="card">
+    <div id="meta" class="muted" style="margin-bottom:8px;"></div>
+
+    <!-- Handle notice appears if user has no handle -->
+    <div id="handleNotice" class="muted hint" style="display:none;margin:8px 0 12px;">
+      Want to appear on the board? <button id="openHandle" class="btn-ghost" style="margin-left:8px;">Pick a handle</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <span class="pill active" id="scopeGlobal">Global</span>
+      <span class="pill" id="scopeMyCountry">My Country</span>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Player</th><th>Tries</th><th>Time</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty" class="muted" style="display:none;margin-top:8px;">No results yet.</div>
+  </div>
+</div>
+
+<!-- Handle modal -->
+<div class="modal" id="handleModal" role="dialog" aria-modal="true" aria-labelledby="handleTitle">
+  <div class="inner">
+    <h3 id="handleTitle" style="margin-top:0;">Pick a handle</h3>
+    <p class="muted">Choose a name to appear on the leaderboard (3–20 letters, numbers, underscore).</p>
+    <input id="handleInput" type="text" placeholder="e.g. HistoryBuff_42" autocomplete="off" spellcheck="false">
+    <div id="handleError" class="muted" style="margin-top:8px;min-height:1.2em;"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+      <button id="cancelHandle" class="btn-ghost">Cancel</button>
+      <button id="saveHandle">Save</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
-  import { supabase, flagEmoji } from "/js/db.js";
+import { supabase, getDeviceId, fetchCountry, ensureUser, flagEmoji } from "/js/db.js";
 
-  function todaySeedFor(type) {
-    const d = new Date();
-    const seed = Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);
-    return `${seed}|${type}`;
+const params = new URLSearchParams(location.search);
+const type = params.get("type") || "births"; // births | events
+
+// UI elements
+const scopeGlobal = document.getElementById("scopeGlobal");
+const scopeMyCountry = document.getElementById("scopeMyCountry");
+const meta = document.getElementById("meta");
+const rowsEl = document.getElementById("rows");
+const emptyEl = document.getElementById("empty");
+const handleNotice = document.getElementById("handleNotice");
+const handleModal = document.getElementById("handleModal");
+const handleInput = document.getElementById("handleInput");
+const handleError = document.getElementById("handleError");
+const openHandleBtn = document.getElementById("openHandle");
+const saveHandleBtn = document.getElementById("saveHandle");
+const cancelHandleBtn = document.getElementById("cancelHandle");
+
+let myCountry = null;
+let userId = null;
+let myHandle = null;
+
+function msFmt(ms){
+  if(!ms && ms!==0) return "—";
+  const s=(ms/1000);
+  return s<60 ? s.toFixed(1)+"s" : (Math.floor(s/60)+"m "+Math.round(s%60)+"s");
+}
+
+function setRows(list){
+  rowsEl.innerHTML = "";
+  if (!list || !list.length) { emptyEl.style.display="block"; return; }
+  emptyEl.style.display="none";
+  list.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    const flag = r.country ? flagEmoji(r.country) : "🏳️";
+    tr.innerHTML = `<td>${i+1}</td><td>${flag} ${r.handle||"Player"}</td><td>${r.tries}</td><td>${msFmt(r.ms_elapsed)}</td>`;
+    rowsEl.appendChild(tr);
+  });
+}
+
+function todaySeedFor(type){
+  const d = new Date();
+  const seed = Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);
+  return `${seed}|${type}`;
+}
+
+async function loadLeaderboard(scope){
+  const seed = todaySeedFor(type);
+  meta.textContent = `Mode: Daily • ${type} • seed ${seed}` + (scope==="country" && myCountry ? ` • ${myCountry}` : "");
+  
+  let query = supabase.from("games")
+    .select("tries, ms_elapsed, users:users!inner(handle, country)")
+    .eq("game_type", type).eq("run_mode", "daily").eq("seed", seed).eq("won", true)
+    .order("tries", { ascending: true }).order("ms_elapsed", { ascending: true }).limit(100);
+
+  if (scope === "country" && myCountry) {
+    query = query.eq("users.country", myCountry);
   }
+  const { data, error } = await query;
+  if (error) { console.error(error); setRows([]); return; }
+  const rows = data.map(d => ({
+    handle: d.users.handle,
+    country: d.users.country,
+    tries: d.tries,
+    ms_elapsed: d.ms_elapsed
+  }));
+  setRows(rows);
+}
 
-  async function loadBoard(type = "births", country = null) {
-    const seed = todaySeedFor(type);
-    let q = supabase.from("games")
-      .select("tries, ms_elapsed, users:users!inner(handle, country)")
-      .eq("game_type", type)
-      .eq("run_mode", "daily")
-      .eq("seed", seed)
-      .eq("won", true)
-      .order("tries", { ascending: true })
-      .order("ms_elapsed", { ascending: true })
-      .limit(100);
-
-    if (country) q = q.eq("users.country", country);
-
-    const { data, error } = await q;
-    if (error) { console.error(error); return []; }
-    return data.map(d => ({ handle: d.users.handle || "Player", country: d.users.country, tries: d.tries, ms: d.ms_elapsed }));
+function showHandleModal(show=true){
+  handleModal.style.display = show ? "flex" : "none";
+  if (show) {
+    handleInput.value = myHandle || "";
+    handleError.textContent = "";
+    setTimeout(()=>handleInput.focus(), 0);
   }
+}
 
-  // TODO: render rows into your table
+function validateHandle(h){
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(h)) {
+    return "Handle must be 3–20 chars: letters, numbers, underscore.";
+  }
+  // tiny profanity guard (expand later or use a lib)
+  const bad = ["fuck","shit","cunt","nazi","hitler","rape"];
+  const lower = h.toLowerCase();
+  if (bad.some(b => lower.includes(b))) return "Please choose a different handle.";
+  return null;
+}
+
+async function ensureHandlePrompt(){
+  // Read current user's handle
+  const { data, error } = await supabase.from("users").select("handle").eq("id", userId).maybeSingle();
+  if (error) { console.error(error); return; }
+  myHandle = data?.handle || null;
+  handleNotice.style.display = myHandle ? "none" : "block";
+}
+
+async function saveHandle(){
+  const h = (handleInput.value || "").trim();
+  const err = validateHandle(h);
+  if (err) { handleError.textContent = err; return; }
+
+  const { error } = await supabase.from("users").update({ handle: h }).eq("id", userId);
+  if (error) {
+    if ((error.code === "23505") || /duplicate/i.test(error.message)) {
+      handleError.textContent = "That handle is taken. Try another.";
+    } else {
+      handleError.textContent = "Could not save handle. Please try again.";
+      console.error(error);
+    }
+    return;
+  }
+  myHandle = h;
+  handleNotice.style.display = "none";
+  showHandleModal(false);
+  // Reload board so your new name appears if you’re on it
+  const activeCountry = scopeMyCountry.classList.contains("active");
+  await loadLeaderboard(activeCountry ? "country" : "global");
+}
+
+async function init(){
+  const deviceId = getDeviceId();
+  myCountry = await fetchCountry();
+  userId = await ensureUser(deviceId, myCountry);
+  await ensureHandlePrompt();
+  await loadLeaderboard("global");
+}
+
+scopeGlobal.addEventListener("click", ()=>{
+  scopeGlobal.classList.add("active");
+  scopeMyCountry.classList.remove("active");
+  loadLeaderboard("global");
+});
+scopeMyCountry.addEventListener("click", ()=>{
+  scopeGlobal.classList.remove("active");
+  scopeMyCountry.classList.add("active");
+  loadLeaderboard("country");
+});
+
+openHandleBtn.addEventListener("click", ()=>showHandleModal(true));
+cancelHandleBtn.addEventListener("click", ()=>showHandleModal(false));
+saveHandleBtn.addEventListener("click", saveHandle);
+handleInput.addEventListener("keydown", e => { if (e.key === "Enter") saveHandle(); });
+
+init();
 </script>
+</body>
+</html>
