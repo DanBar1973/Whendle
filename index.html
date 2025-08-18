@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -22,8 +21,7 @@
   .grid{display:grid;gap:8px;margin-top:12px}.guess-row{display:grid;align-items:center;gap:10px;padding:10px;grid-template-columns:auto 1fr auto;border:1px solid #20283a;border-radius:12px;background:#0e1320}
   .year{font-weight:800;letter-spacing:1px}.hint{min-width:120px;text-align:left;color:var(--muted);font-size:.9rem}.status{margin-top:10px;font-weight:700}.success{color:var(--green)}.error{color:var(--red)}
   h2.title{margin:4px 0 2px 0;font-size:1.35rem}
-  .rules{margin:0;padding-left:18px}
-  .rules li{margin:2px 0}
+  .rules{margin:0;padding-left:18px}.rules li{margin:2px 0}
 </style>
 </head>
 <body>
@@ -38,23 +36,25 @@
 
   <div class="card">
     <div class="row">
-      <div class="col"><img class="portrait" id="portrait" alt="" src=""></div>
+      <div class="col">
+        <img class="portrait" id="portrait" alt="" src="" referrerpolicy="no-referrer" crossorigin="anonymous">
+      </div>
       <div class="col">
         <h2 id="title" class="title">Person Name</h2>
         <ul class="rules muted">
-          <li>Guess the <strong>4‑digit birth year</strong>. </li>
+          <li>Guess the <strong>4-digit birth year</strong>.</li>
           <li>You get <strong>6 tries</strong>.</li>
           <li>Coloured lamps show digit count:</li>
           <li>🟩 right number, right place</li>
           <li>🟨 right number, wrong place</li>
           <li>🟥 wrong number</li>
-          <li><em>Warmer</em>🔥<em>/Cooler</em>🧊 hints compare to your previous guess (ties show “No change ◼︎)”.</li>
+          <li><em>Warmer</em>🔥 / <em>Cooler</em>🧊 compares to your previous guess (ties show “No change ◼︎”).</li>
         </ul>
         <div class="controls" style="margin-top:8px;">
           <label class="muted" for="mode">Mode</label>
-          <select id="mode"><option>Daily</option><option>Random</option></select>
+          <select id="mode"><option>Daily</option><option>Practice</option></select>
           <label><input type="checkbox" id="hintToggle" checked> Warmer/Cooler</label>
-          <input id="yearInput" type="text" inputmode="numeric" pattern="\\d{4}" placeholder="e.g. 1459" maxlength="4">
+          <input id="yearInput" type="text" inputmode="numeric" pattern="\\d{4}" placeholder="e.g. 1879" maxlength="4">
           <button id="submitBtn">Submit guess</button>
           <button id="newRound" class="secondary">New round</button>
         </div>
@@ -83,83 +83,127 @@ const PEOPLE=[
  {name:"Isaac Newton",year:1643,img:"https://upload.wikimedia.org/wikipedia/commons/d/d4/Sir_Isaac_Newton_%281642-1727%29.jpg",summary:"Isaac Newton (1643–1727) was an English mathematician, physicist, and astronomer who formulated the laws of motion and universal gravitation."},
  {name:"Nikola Tesla",year:1856,img:"https://upload.wikimedia.org/wikipedia/commons/d/d4/N.Tesla.JPG",summary:"Nikola Tesla (1856–1943) was a Serbian-American inventor and engineer known for AC power systems and numerous innovations."}
 ];
+
 function pad4(n){return n.toString().padStart(4,"0");}
 function score(a,g){const m=[0,1,2,3].map(i=>a[i]===g[i]);const greens=m.filter(Boolean).length;const ra={},rg={};for(let i=0;i<4;i++){if(!m[i]){ra[a[i]]=(ra[a[i]]||0)+1;rg[g[i]]=(rg[g[i]]||0)+1}}let amb=0;for(const d in rg){amb+=Math.min(rg[d]||0,ra[d]||0)}const red=4-greens-amb;return{green:greens,amber:amb,red:red}}
 function lampHTML(r){return`<div class="lamps"><span class="lamp green">🟩 ${r.green}</span><span class="lamp amber">🟨 ${r.amber}</span><span class="lamp red">🟥 ${r.red}</span></div>`}
 function temperatureHint(ans,prev,nw){const pa=Math.abs(ans-prev),ca=Math.abs(ans-nw);if(ca<pa)return"Warmer 🔥";if(ca>pa)return"Cooler 🧊";return"No change ◼︎"}
-function todayIndex(){const d=new Date();const seed=Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);return seed%PEOPLE.length}
-let state={mode:"Daily",person:null,answer:"",guesses:[],results:[],over:false,win:false};
-function setImageWithFallback(el,src){el.onerror=()=>{el.style.objectFit='contain';el.style.background='#0e1320';};el.src=src;}
-function pickPerson(mode){const idx=(mode==="Daily")?todayIndex():Math.floor(Math.random()*PEOPLE.length);const p=PEOPLE[idx];state.person=p;state.answer=pad4(p.year);state.guesses=[];state.results=[];state.over=false;state.win=false;setImageWithFallback(document.getElementById("portrait"),p.img);document.getElementById("history").innerHTML="";document.getElementById("status").textContent="";document.getElementById("reveal").style.display="none";document.getElementById("summary").textContent="";document.getElementById("title").textContent=p.name;document.title=`Whendle — Births (${p.name})`;}
-async function fetchSummary(name,fallback){try{const url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(name);const r=await fetch(url,{mode:"cors"});if(r.ok){const d=await r.json();if(d&&d.extract)return d.extract}}catch(e){}return fallback||""}
-function addHistoryRow(guess,res,hint){const row=document.createElement("div");row.className="guess-row";const ht=(hint&&hint.trim())?hint:" ";row.innerHTML=`<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${ht}</span>`;document.getElementById("history").prepend(row);}
-async function finishRound(){const s=document.getElementById("status");if(state.win){s.className="status success";s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`;}else{s.className="status error";s.textContent=`Out of tries! The correct year was ${state.answer}.`;}const rev=document.getElementById("reveal");const sum=document.getElementById("summary");const t=await fetchSummary(state.person.name,state.person.summary);sum.textContent=t||"(No summary available.)";rev.style.display="block";// After you set s.textContent = "Correct!" or "Out of tries!" inside finishRound:
+function todaySeedNumber(){const d=new Date();return Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);}
+function todayIndex(){return todaySeedNumber()%PEOPLE.length}
 
-const boardLink = document.createElement("a");
-boardLink.href = `/leaderboard.html?type=births`;   // or ?type=events on the Events page
-boardLink.textContent = "See where you placed →";
-boardLink.style.display = "inline-block";
-boardLink.style.marginTop = "8px";
-boardLink.style.color = "#60a5fa";
-boardLink.style.fontWeight = "600";
-s.appendChild(document.createElement("br"));
-s.appendChild(boardLink);
+// deterministic “practice pool” that excludes today (archive-ish)
+function rng(seed){let x=seed|0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)/4294967296)}}
+function practicePool(count=14){
+  const today=todayIndex();
+  const d=new Date(); const monthSeed=Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}`);
+  const rand=rng(monthSeed);
+  const indices=[...Array(PEOPLE.length).keys()].filter(i=>i!==today);
+  indices.sort(()=>rand()-0.5);
+  return indices.slice(0, Math.min(count, indices.length));
 }
-function submitGuess(){if(state.over)return;const inp=document.getElementById("yearInput");const v=(inp.value||"").trim();const s=document.getElementById("status");if(!/^\d{4}$/.test(v)){s.className="status";s.textContent="Please enter exactly 4 digits (e.g., 1879).";return}let hint="";if(document.getElementById("hintToggle").checked&&state.guesses.length>0){hint=temperatureHint(Number(state.answer),Number(state.guesses[state.guesses.length-1]),Number(v))}const res=score(state.answer,v);state.guesses.push(v);state.results.push(res);addHistoryRow(v,res,hint);inp.value="";if(res.green===4){state.over=true;state.win=true;finishRound()}else if(state.guesses.length>=6){state.over=true;state.win=false;finishRound()}}
-document.getElementById("submitBtn").addEventListener("click",submitGuess);document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});document.getElementById("newRound").addEventListener("click",()=>{pickPerson(document.getElementById("mode").value)});document.getElementById("mode").addEventListener("change",e=>{pickPerson(e.target.value)});pickPerson(state.mode);
+
+let state={mode:"Daily",person:null,answer:"",guesses:[],results:[],over:false,win:false};
+
+function setImageWithFallback(el,src){
+  el.onerror=()=>{el.style.objectFit='contain';el.style.background='#0e1320';};
+  el.src=src;
+}
+
+function pickPerson(mode){
+  let idx;
+  if (mode==="Daily") {
+    idx = todayIndex();
+  } else { // Practice
+    const pool = practicePool(14);
+    idx = pool[Math.floor(Math.random()*pool.length)];
+  }
+  const p=PEOPLE[idx];
+  state.person=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false;
+  const img=document.getElementById("portrait"); img.alt=p.name; setImageWithFallback(img,p.img);
+  document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
+  document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
+  document.getElementById("title").textContent=p.name; document.title=`Whendle — Births (${p.name})`;
+}
+
+async function fetchSummary(name,fallback){
+  try{
+    const url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(name);
+    const r=await fetch(url,{mode:"cors"});
+    if(r.ok){const d=await r.json(); if(d&&d.extract) return d.extract;}
+  }catch(e){}
+  return fallback||"";
+}
+
+function addHistoryRow(guess,res,hint){
+  const row=document.createElement("div"); row.className="guess-row";
+  const ht=(hint&&hint.trim())?hint:" ";
+  row.innerHTML=`<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${ht}</span>`;
+  document.getElementById("history").prepend(row);
+}
+
+async function finishRound(){
+  const s=document.getElementById("status");
+  if(state.win){ s.className="status success"; s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`; }
+  else{ s.className="status error"; s.textContent=`Out of tries! The correct year was ${state.answer}.`; }
+
+  // “See where you placed” link
+  const boardLink=document.createElement("a");
+  boardLink.href="/leaderboard.html?type=births";
+  boardLink.textContent="See where you placed →";
+  boardLink.style.display="inline-block"; boardLink.style.marginTop="8px"; boardLink.style.color="#60a5fa"; boardLink.style.fontWeight="600";
+  s.appendChild(document.createElement("br")); s.appendChild(boardLink);
+
+  const rev=document.getElementById("reveal"); const sum=document.getElementById("summary");
+  const t=await fetchSummary(state.person.name,state.person.summary); sum.textContent=t||"(No summary available.)"; rev.style.display="block";
+
+  // === Record to Supabase ===
+  try{
+    const d=new Date(); const seedNum=todaySeedNumber(); const seed=`${seedNum}|births`;
+    const runMode=document.getElementById('mode').value==='Daily'?'daily':'practice';
+    if (window.onRoundFinished) {
+      await window.onRoundFinished({
+        gameType:'births', runMode, seed,
+        entityName: state.person.name, win: state.win, tries: state.guesses.length,
+        msElapsed: null, results: state.results
+      });
+    }
+  }catch(e){ console.warn("recordGame failed (non-fatal)", e); }
+}
+
+function submitGuess(){
+  if(state.over)return;
+  const inp=document.getElementById("yearInput"); const v=(inp.value||"").trim();
+  const s=document.getElementById("status");
+  if(!/^\d{4}$/.test(v)){ s.className="status"; s.textContent="Please enter exactly 4 digits (e.g., 1879)."; return; }
+  let hint=""; if(document.getElementById("hintToggle").checked && state.guesses.length>0){
+    hint=temperatureHint(Number(state.answer),Number(state.guesses[state.guesses.length-1]),Number(v));
+  }
+  const res=score(state.answer,v); state.guesses.push(v); state.results.push(res); addHistoryRow(v,res,hint); inp.value="";
+  if(res.green===4){ state.over=true; state.win=true; finishRound(); }
+  else if(state.guesses.length>=6){ state.over=true; state.win=false; finishRound(); }
+}
+
+document.getElementById("submitBtn").addEventListener("click",submitGuess);
+document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});
+document.getElementById("newRound").addEventListener("click",()=>{pickPerson(document.getElementById("mode").value)});
+document.getElementById("mode").addEventListener("change",e=>{pickPerson(e.target.value)});
+pickPerson(state.mode);
 </script>
 
-  <script type="module">
-  import { supabase, getDeviceId, fetchCountry, ensureUser, recordGame, buildShare } from "/js/db.js";
+<!-- Supabase hook block -->
+<script type="module">
+  import { getDeviceId, fetchCountry, ensureUser, recordGame, buildShare } from "/js/db.js";
 
-  // 1) Identify device + capture country (optional)
   const deviceId = getDeviceId();
-  const country = await fetchCountry();       // requires /api/country (step 5)
+  const country = await fetchCountry();
   const userId = await ensureUser(deviceId, country);
 
-  // 2) Define a helper you call when the round ends
-  async function onRoundFinished({ gameType, runMode, seed, entityName, win, tries, msElapsed, results }) {
-    // Save to DB
-    await recordGame({
-      userId,
-      gameType,
-      runMode,
-      seed,
-      entityName,
-      won: win,
-      tries,
-      msElapsed,
-      rows: results    // array of {green, amber, red} per guess
-    });
-
-    // Build share text + copy (optional)
-    const shareText = buildShare({
-      title: `Whendle — ${entityName}`,
-      tries,
-      won: win,
-      rows: results,
-      url: "https://whendle.org"
-    });
-    try { await navigator.clipboard.writeText(shareText); } catch {}
-  }
-
-  // 3) Call onRoundFinished from YOUR existing finishRound()
-  // Example (tweak names to match your code):
-  // finishRound() {
-  //   const seedNum = Number(`${new Date().getFullYear()}${String(new Date().getMonth()+1).padStart(2,"0")}${String(new Date().getDate()).padStart(2,"0")}`);
-  //   const seed = `${seedNum}|births`; // or |events
-  //   onRoundFinished({
-  //     gameType: 'births',
-  //     runMode: document.getElementById('mode').value === 'Daily' ? 'daily' : 'practice',
-  //     seed,
-  //     entityName: state.person?.name || state.item?.name,
-  //     win: state.win,
-  //     tries: state.guesses.length,
-  //     msElapsed: null,      // wire this up later if you track it
-  //     results: state.results
-  //   });
-  // }
+  // Expose to game script
+  window.onRoundFinished = async ({ gameType, runMode, seed, entityName, win, tries, msElapsed, results }) => {
+    await recordGame({ userId, gameType, runMode, seed, entityName, won: win, tries, msElapsed, rows: results });
+    const shareText = buildShare({ title:`Whendle — ${entityName}`, tries, won:win, rows:results, url:"https://whendle.org" });
+    try{ await navigator.clipboard.writeText(shareText); }catch{}
+  };
 </script>
-
 </body>
 </html>
