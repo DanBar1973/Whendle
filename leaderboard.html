@@ -1,0 +1,30 @@
+<script type="module">
+  import { supabase, flagEmoji } from "/js/db.js";
+
+  function todaySeedFor(type) {
+    const d = new Date();
+    const seed = Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);
+    return `${seed}|${type}`;
+  }
+
+  async function loadBoard(type = "births", country = null) {
+    const seed = todaySeedFor(type);
+    let q = supabase.from("games")
+      .select("tries, ms_elapsed, users:users!inner(handle, country)")
+      .eq("game_type", type)
+      .eq("run_mode", "daily")
+      .eq("seed", seed)
+      .eq("won", true)
+      .order("tries", { ascending: true })
+      .order("ms_elapsed", { ascending: true })
+      .limit(100);
+
+    if (country) q = q.eq("users.country", country);
+
+    const { data, error } = await q;
+    if (error) { console.error(error); return []; }
+    return data.map(d => ({ handle: d.users.handle || "Player", country: d.users.country, tries: d.tries, ms: d.ms_elapsed }));
+  }
+
+  // TODO: render rows into your table
+</script>
