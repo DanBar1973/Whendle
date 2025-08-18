@@ -93,7 +93,18 @@ function setImageWithFallback(el,src){el.onerror=()=>{el.style.objectFit='contai
 function pickPerson(mode){const idx=(mode==="Daily")?todayIndex():Math.floor(Math.random()*PEOPLE.length);const p=PEOPLE[idx];state.person=p;state.answer=pad4(p.year);state.guesses=[];state.results=[];state.over=false;state.win=false;setImageWithFallback(document.getElementById("portrait"),p.img);document.getElementById("history").innerHTML="";document.getElementById("status").textContent="";document.getElementById("reveal").style.display="none";document.getElementById("summary").textContent="";document.getElementById("title").textContent=p.name;document.title=`Whendle — Births (${p.name})`;}
 async function fetchSummary(name,fallback){try{const url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(name);const r=await fetch(url,{mode:"cors"});if(r.ok){const d=await r.json();if(d&&d.extract)return d.extract}}catch(e){}return fallback||""}
 function addHistoryRow(guess,res,hint){const row=document.createElement("div");row.className="guess-row";const ht=(hint&&hint.trim())?hint:" ";row.innerHTML=`<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${ht}</span>`;document.getElementById("history").prepend(row);}
-async function finishRound(){const s=document.getElementById("status");if(state.win){s.className="status success";s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`;}else{s.className="status error";s.textContent=`Out of tries! The correct year was ${state.answer}.`;}const rev=document.getElementById("reveal");const sum=document.getElementById("summary");const t=await fetchSummary(state.person.name,state.person.summary);sum.textContent=t||"(No summary available.)";rev.style.display="block";}
+async function finishRound(){const s=document.getElementById("status");if(state.win){s.className="status success";s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`;}else{s.className="status error";s.textContent=`Out of tries! The correct year was ${state.answer}.`;}const rev=document.getElementById("reveal");const sum=document.getElementById("summary");const t=await fetchSummary(state.person.name,state.person.summary);sum.textContent=t||"(No summary available.)";rev.style.display="block";// After you set s.textContent = "Correct!" or "Out of tries!" inside finishRound:
+
+const boardLink = document.createElement("a");
+boardLink.href = `/leaderboard.html?type=births`;   // or ?type=events on the Events page
+boardLink.textContent = "See where you placed →";
+boardLink.style.display = "inline-block";
+boardLink.style.marginTop = "8px";
+boardLink.style.color = "#60a5fa";
+boardLink.style.fontWeight = "600";
+s.appendChild(document.createElement("br"));
+s.appendChild(boardLink);
+}
 function submitGuess(){if(state.over)return;const inp=document.getElementById("yearInput");const v=(inp.value||"").trim();const s=document.getElementById("status");if(!/^\d{4}$/.test(v)){s.className="status";s.textContent="Please enter exactly 4 digits (e.g., 1879).";return}let hint="";if(document.getElementById("hintToggle").checked&&state.guesses.length>0){hint=temperatureHint(Number(state.answer),Number(state.guesses[state.guesses.length-1]),Number(v))}const res=score(state.answer,v);state.guesses.push(v);state.results.push(res);addHistoryRow(v,res,hint);inp.value="";if(res.green===4){state.over=true;state.win=true;finishRound()}else if(state.guesses.length>=6){state.over=true;state.win=false;finishRound()}}
 document.getElementById("submitBtn").addEventListener("click",submitGuess);document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});document.getElementById("newRound").addEventListener("click",()=>{pickPerson(document.getElementById("mode").value)});document.getElementById("mode").addEventListener("change",e=>{pickPerson(e.target.value)});pickPerson(state.mode);
 </script>
