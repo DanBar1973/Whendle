@@ -113,6 +113,29 @@ function setImageWithFallback(el,src,alt){
   el.onerror=()=>{el.style.objectFit='contain';el.style.background='#0e1320';};
   el.alt=alt||""; el.src=src;
 }
+async function fetchWikiMeta(title) {
+  try {
+    const url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(title);
+    const r = await fetch(url, { mode: "cors" });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return {
+      extract: d?.extract || "",
+      image: (d?.originalimage?.source || d?.thumbnail?.source) || null
+    };
+  } catch { return null; }
+}
+
+function setPortrait(imgEl, src, altText) {
+  imgEl.referrerPolicy = "no-referrer";
+  imgEl.crossOrigin = "anonymous";
+  imgEl.onerror = () => {
+    imgEl.style.objectFit = "contain";
+    imgEl.style.background = "#0e1320";
+    imgEl.alt = altText || "Image unavailable";
+  };
+  imgEl.src = src;
+}
 
 function pickEvent(mode){
   let idx;
