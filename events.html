@@ -34,14 +34,81 @@
 @keyframes pulse{ 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
 
 /* Modal */
-.modal-backdrop{ ... }
-.modal{ ... }
-.modal > .panel{ ... }
-.modal .head{ ... }
-.modal .close{ ... }
-.modal .body{ ... }
-.modal .foot{ ... }
-.modal a.wiki{ ... }
+/* Backdrop that dims the screen */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none;
+  z-index:60;
+}
+
+/* Modal container (grid centers the panel) */
+.modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  place-items:center;
+  z-index:61;
+}
+
+/* Inner panel */
+.modal > .panel{
+  width:min(760px,92%);
+  background:linear-gradient(180deg,#1a2231,#141a26);
+  border:1px solid #1f2634;
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  color:var(--text);
+}
+
+/* Header */
+.modal .head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:8px;
+}
+.modal .head h3{
+  margin:0;
+  font-size:1.1rem;
+}
+
+/* Close button */
+.modal .close{
+  background:#0f1420;
+  border:1px solid #263043;
+  color:var(--text);
+  padding:6px 10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
+/* Body text */
+.modal .body{
+  white-space:pre-wrap;
+  line-height:1.45;
+  font-size:0.95rem;
+  color:var(--text);
+}
+
+/* Footer with external link */
+.modal .foot{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+.modal a.wiki{
+  color:#93c5fd;
+  text-decoration:none;
+  font-weight:700;
+}
+.modal a.wiki:hover{
+  text-decoration:underline;
+}
+
 
 </style>
 </head>
@@ -146,7 +213,7 @@ function setImageWithFallback(el,src,alt){
   el.alt=alt||""; el.src=src;
 }
 async function fetchWikiMetaSmart(title) {
-  // 1) try exact REST summary (handles redirects)
+  // helper: REST summary (handles redirects)
   const rest = async (t) => {
     const u = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t);
     const r = await fetch(u, { mode: "cors" });
@@ -161,14 +228,11 @@ async function fetchWikiMetaSmart(title) {
     };
   };
 
-  // ...your search fallback logic here...
-}
-
-
+  // 1) try exact
   const exact = await rest(title);
   if (exact) return exact;
 
-  // 2) fall back to search for a close title
+  // 2) fall back to search
   try {
     const searchUrl =
       "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
