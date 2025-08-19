@@ -89,6 +89,16 @@ const EVENTS=[
  {name:"First iPhone released",year:2007,img:"https://upload.wikimedia.org/wikipedia/commons/f/fa/IPhone_1st_Gen.svg",summary:"Apple released the first iPhone in 2007, catalyzing the smartphone era."}
 ];
 
+  const WIKI_TITLE = {
+  "World War I begins": "World War I",
+  "Magna Carta sealed": "Magna Carta",
+  "Penicillin discovered": "Penicillin",
+  "Sputnik 1 launched": "Sputnik 1",
+  "Columbus reaches the Americas": "Voyages of Christopher Columbus",
+  "World War II ends": "End of World War II",
+  "DNA double helix published": "DNA" // broad page but reliably has an image
+};
+
 function pad4(n){return n.toString().padStart(4,"0");}
 function score(a,g){const m=[0,1,2,3].map(i=>a[i]===g[i]);const greens=m.filter(Boolean).length;const ra={},rg={};for(let i=0;i<4;i++){if(!m[i]){ra[a[i]]=(ra[a[i]]||0)+1;rg[g[i]]=(rg[g[i]]||0)+1}}let amb=0;for(const d in rg){amb+=Math.min(rg[d]||0,ra[d]||0)}const red=4-greens-amb;return{green:greens,amber:amb,red:red}}
 function lampHTML(r){return`<div class="lamps"><span class="lamp green">🟩 ${r.green}</span><span class="lamp amber">🟨 ${r.amber}</span><span class="lamp red">🟥 ${r.red}</span></div>`}
@@ -114,49 +124,40 @@ function setImageWithFallback(el,src,alt){
   el.alt=alt||""; el.src=src;
 }
 async function fetchWikiMetaSmart(title) {
-  const OVERRIDES = new Map([
-    ["French Revolution begins (Storming of the Bastille)", "Storming of the Bastille"],
-    ["First iPhone released", "IPhone (1st generation)"],
-    ["World Wide Web proposed", "World Wide Web"],
-    ["First Powered Flight (Wright Brothers)", "Wright brothers"],
-    ["Printing press introduced in Europe (Gutenberg)", "Printing press"],
-  ]);
+  // 1) try exact REST summary (handles redirects)
+  const rest = async (t) => {
+    const u = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t);
+    const r = await fetch(u, { mode: "cors" });
+    if (!r.ok) return null;
+    const d = await r.json();
+    return {
+      pageTitle: d?.title || t,
+      extract: d?.extract || "",
+      image: d?.originalimage?.source || null,
+      thumb: d?.thumbnail?.source || null
+    };
+  };
 
-  // Build candidate titles to try (original → overrides → variations)
-  const cand = [];
-  cand.push(title);
-  if (OVERRIDES.has(title)) cand.unshift(OVERRIDES.get(title));
+  const exact = await rest(title);
+  if (exact) return exact;
 
-  // If there are parentheses, try inside and before them
-  const m = title.match(/^(.*?)\s*\((.+)\)\s*$/);
-  if (m) {
-    const before = m[1].trim();
-    const inside = m[2].trim();
-    if (inside) cand.push(inside);
-    if (before) cand.push(before);
-  }
+  // 2) fall back to search for a close title
+  try {
+    const searchUrl =
+      "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
+      encodeURIComponent(title) +
+      "&utf8=1&format=json&origin=*";
+    const sr = await fetch(searchUrl, { mode: "cors" });
+    if (sr.ok) {
+      const js = await sr.json();
+      const best = js?.query?.search?.[0]?.title;
+      if (best) {
+        const viaSearch = await rest(best);
+        if (viaSearch) return viaSearch;
+      }
+    }
+  } catch {}
 
-  // Normalize some punctuation variants
-  cand.push(title.replace(/—/g, "-"));
-  cand.push(title.replace(/—.*$/, "").trim());
-
-  // De-duplicate
-  const seen = new Set(); const titles = cand.filter(t => t && !seen.has(t) && seen.add(t));
-
-  for (const t of titles) {
-    try {
-      const url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t);
-      const r = await fetch(url, { mode: "cors", redirect: "follow" });
-      if (!r.ok) { continue; }
-      const d = await r.json();
-      return {
-        page: t,
-        extract: d?.extract || "",
-        image: d?.originalimage?.source || null,
-        thumb: d?.thumbnail?.source || null
-      };
-    } catch {}
-  }
   return null;
 }
 
@@ -234,23 +235,23 @@ async function pickEvent(mode){
 document.getElementById("title").textContent = p.name;
 document.title = `Whendle — Events (${p.name})`;
 
-// Try Wikipedia first for a better image + summary (smart lookup)
-const meta = await fetchWikiMetaSmart(p.name);
+// Pick best title to query
+const qTitle = WIKI_TITLE[p.name] || p.name;
 
-// Prefer API thumbnail (lightweight) → API original → curated fallback
+// Try Wikipedia for image + summary (with search fallback)
+const meta = await fetchWikiMetaSmart(qTitle);
+
+// Prefer API thumb (lightweight) → API original → your curated fallback
 const sources = [];
 if (meta?.thumb)  sources.push(meta.thumb);
 if (meta?.image)  sources.push(meta.image);
 if (p.img)        sources.push(p.img);
 
+console.debug("Using wiki page:", meta?.pageTitle, "Image candidates:", sources);
 setPortraitWithFallback(img, sources, p.name);
 
-// Save summary for reveal
-if (!state.item) state.item = {};
+// Save summary
 state.item.summary = meta?.extract || p.summary || "";
-
-console.debug("Using wiki page:", meta?.page, "Image candidates:", sources);
-
 
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
   document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
