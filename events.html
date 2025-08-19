@@ -142,19 +142,20 @@ function commonsThumb(url, width = 800){
     const u = new URL(url);
     if (!u.hostname.includes('upload.wikimedia.org')) return null;
 
+    // If it's already a /thumb/ URL, don't touch it.
+    if (/^\/wikipedia\/commons\/thumb\//.test(u.pathname)) return url;
+
     // e.g. /wikipedia/commons/1/10/File.svg  or  /wikipedia/commons/1/10/File.jpg
     const m = u.pathname.match(/^\/wikipedia\/commons\/(.+\/)([^/]+)$/);
     if (!m) return null;
     const dir = m[1], file = m[2];
 
     const isSvg = /\.svg$/i.test(file);
-    // SVG thumbs end with ".svg.png"
     const tail = isSvg ? `${width}px-${file}.png` : `${width}px-${file}`;
 
     return `https://upload.wikimedia.org/wikipedia/commons/thumb/${dir}${file}/${tail}`;
   } catch { return null; }
 }
-
 
 function setPortraitWithFallback(imgEl, srcs, altText){
   imgEl.referrerPolicy = "no-referrer";
@@ -202,11 +203,11 @@ document.title = `Whendle — Events (${p.name})`;
 // Try Wikipedia first for a better image + summary
 const meta = await fetchWikiMeta(p.name);
 
-// Prefer API thumbnail (lightweight) → API original → curated fallback
+// Prefer curated image → API thumbnail → API original
 const sources = [];
+if (p.img)        sources.push(p.img);
 if (meta?.thumb)  sources.push(meta.thumb);
 if (meta?.image)  sources.push(meta.image);
-if (p.img)        sources.push(p.img);
 
 setPortraitWithFallback(img, sources, p.name);
 
