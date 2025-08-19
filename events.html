@@ -540,6 +540,7 @@ async function finishRound(){
   if (rules) rules.style.display = 'none';
 
   // “See where you placed” → Events board
+  const boardLink = document.createElement("a");
   boardLink.href = `/leaderboard.html?type=events`;
   boardLink.textContent = "See where you placed →";
   boardLink.style.display = "inline-block";
