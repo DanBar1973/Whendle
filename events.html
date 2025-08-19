@@ -121,7 +121,7 @@ async function fetchWikiMeta(title) {
     const d = await r.json();
     return {
       extract: d?.extract || "",
-      image: d?.originalimage?.source || null
+      image: d?.originalimage?.source || null,
       thumb: d?.thumbnail?.source || null
     };
   } catch { return null; }
