@@ -22,6 +22,27 @@
   .year{font-weight:800;letter-spacing:1px}.hint{min-width:120px;text-align:left;color:var(--muted);font-size:.9rem}.status{margin-top:10px;font-weight:700}.success{color:var(--green)}.error{color:var(--red)}
   h2.title{margin:4px 0 2px 0;font-size:1.35rem}
   .rules{margin:0;padding-left:18px}.rules li{margin:2px 0}
+  /* Learn-more button */
+.learnmore-btn{
+  position:fixed; right:16px; bottom:16px; z-index:50;
+  background:linear-gradient(180deg,#3b82f6,#2563eb);
+  border:1px solid #1e40af; color:white; font-weight:700;
+  padding:12px 14px; border-radius:999px; cursor:pointer; display:none;
+  box-shadow:0 10px 20px rgba(0,0,0,.35);
+}
+.learnmore-btn.pulse{ animation:pulse 1.2s ease-in-out infinite; }
+@keyframes pulse{ 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+
+/* Modal */
+.modal-backdrop{ ... }
+.modal{ ... }
+.modal > .panel{ ... }
+.modal .head{ ... }
+.modal .close{ ... }
+.modal .body{ ... }
+.modal .foot{ ... }
+.modal a.wiki{ ... }
+
 </style>
 </head>
 <body>
@@ -135,9 +156,14 @@ async function fetchWikiMetaSmart(title) {
       pageTitle: d?.title || t,
       extract: d?.extract || "",
       image: d?.originalimage?.source || null,
-      thumb: d?.thumbnail?.source || null
+      thumb: d?.thumbnail?.source || null,
+      page: d?.content_urls?.desktop?.page || (`https://en.wikipedia.org/wiki/${encodeURIComponent(t)}`)
     };
   };
+
+  // ...your search fallback logic here...
+}
+
 
   const exact = await rest(title);
   if (exact) return exact;
@@ -253,10 +279,15 @@ setPortraitWithFallback(img, sources, p.name);
 
 // Save summary
 state.item.summary = meta?.extract || p.summary || "";
-
+state.item.wiki = meta?.page || (`https://en.wikipedia.org/wiki/${encodeURIComponent(p.name)}`);
+  
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
   document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
   document.getElementById("title").textContent=p.name; document.title=`Whendle — Events (${p.name})`;
+  const rules = document.querySelector('.rules');
+if (rules) rules.style.display = '';
+  hideLearnMore();
+
 }
 
 async function fetchSummary(name,fallback){
@@ -270,6 +301,57 @@ function addHistoryRow(guess,res,hint){
   const ht=(hint&&hint.trim())?hint:" ";
   row.innerHTML=`<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${ht}</span>`;
   document.getElementById("history").prepend(row);
+}
+function ensureLearnMoreUI(){
+  // wire once
+  if (ensureLearnMoreUI._wired) return;
+  ensureLearnMoreUI._wired = true;
+
+  const btn = document.getElementById('learnMoreBtn');
+  const modal = document.getElementById('summaryModal');
+  const backdrop = document.getElementById('modalBackdrop');
+  const closeBtn = document.getElementById('modalCloseBtn');
+
+  const close = () => {
+    modal.style.display = 'none';
+    backdrop.style.display = 'none';
+  };
+
+  btn.addEventListener('click', () => {
+    modal.style.display = 'grid';
+    backdrop.style.display = 'block';
+    // stop pulsing when opened
+    btn.classList.remove('pulse');
+  });
+  closeBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', close);
+
+  // expose
+  window._lm = { btn, modal, backdrop };
+}
+
+function hideLearnMore(){
+  ensureLearnMoreUI();
+  const { btn, modal, backdrop } = window._lm;
+  btn.style.display = 'none';
+  btn.classList.remove('pulse');
+  modal.style.display = 'none';
+  backdrop.style.display = 'none';
+}
+
+function showLearnMore({title, summary, wiki}){
+  ensureLearnMoreUI();
+  const { btn } = window._lm;
+  const body = document.getElementById('modalBody');
+  const link = document.getElementById('wikiLink');
+  const heading = document.getElementById('modalTitle');
+
+  heading.textContent = `Learn more — ${title}`;
+  body.textContent = summary || '(No summary available.)';
+  link.href = wiki;
+
+  btn.style.display = 'inline-block';
+  btn.classList.add('pulse');
 }
 
 async function finishRound(){
@@ -293,11 +375,13 @@ async function finishRound(){
   s.appendChild(document.createElement("br"));
   s.appendChild(boardLink);
 
-  // Reveal summary (already fetched in pickEvent)
-  const rev = document.getElementById("reveal");
-  const sum = document.getElementById("summary");
-  sum.textContent = (state.item && state.item.summary) || "(No summary available.)";
-  rev.style.display = "block";
+  // Button show for reveal (already fetched in pickEvent)
+  showLearnMore({
+  title: state.item.name,
+  summary: state.item.summary,
+  wiki: state.item.wiki
+});
+
 
   // Record result (Supabase hook, if you added onRoundFinished in your module script)
   try {
@@ -354,5 +438,20 @@ pickEvent(state.mode);
     try{ await navigator.clipboard.writeText(shareText); }catch{}
   };
 </script>
+  <button id="learnMoreBtn" class="learnmore-btn" type="button">Learn more ↗</button>
+<div id="modalBackdrop" class="modal-backdrop"></div>
+<div id="summaryModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="panel">
+    <div class="head">
+      <h3 id="modalTitle">Learn more</h3>
+      <button class="close" id="modalCloseBtn" type="button">Close</button>
+    </div>
+    <div id="modalBody" class="body"></div>
+    <div class="foot">
+      <a id="wikiLink" class="wiki" target="_blank" rel="noopener noreferrer">Open on Wikipedia ↗</a>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
