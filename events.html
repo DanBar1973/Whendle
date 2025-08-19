@@ -136,17 +136,24 @@ function setPortrait(imgEl, src, altText) {
   };
   imgEl.src = src;
 }
-function commonsThumb(url, width=800){
+function commonsThumb(url, width = 800){
   try{
     const u = new URL(url);
     if (!u.hostname.includes('upload.wikimedia.org')) return null;
-    // /wikipedia/commons/1/10/Name.jpg → /wikipedia/commons/thumb/1/10/Name.jpg/800px-Name.jpg
+
+    // e.g. /wikipedia/commons/1/10/File.svg  or  /wikipedia/commons/1/10/File.jpg
     const m = u.pathname.match(/^\/wikipedia\/commons\/(.+\/)([^/]+)$/);
     if (!m) return null;
     const dir = m[1], file = m[2];
-    return `https://upload.wikimedia.org/wikipedia/commons/thumb/${dir}${file}/${width}px-${file}`;
+
+    const isSvg = /\.svg$/i.test(file);
+    // SVG thumbs end with ".svg.png"
+    const tail = isSvg ? `${width}px-${file}.png` : `${width}px-${file}`;
+
+    return `https://upload.wikimedia.org/wikipedia/commons/thumb/${dir}${file}/${tail}`;
   } catch { return null; }
 }
+
 
 function setPortraitWithFallback(imgEl, srcs, altText){
   imgEl.referrerPolicy = "no-referrer";
@@ -163,6 +170,7 @@ function setPortraitWithFallback(imgEl, srcs, altText){
   }
 
   let i = 0;
+  
   const tryNext = () => {
     if (i >= candidates.length) {
       imgEl.style.objectFit = "contain";
@@ -172,6 +180,7 @@ function setPortraitWithFallback(imgEl, srcs, altText){
     imgEl.onerror = () => { i++; tryNext(); };
     imgEl.src = candidates[i];
   };
+  console.debug("Image candidates:", candidates);
   tryNext();
 }
 
@@ -192,8 +201,11 @@ const imgSrc = meta?.image || p.img;
 // setPortrait(img, imgSrc, p.name);
 
 // NEW
-setPortraitWithFallback(img, [meta?.image, p.img], p.name);
-;
+// BEFORE
+// setPortraitWithFallback(img, [meta?.image, p.img], p.name);
+
+// AFTER (prefer your curated event image first)
+setPortraitWithFallback(img, [p.img, meta?.image], p.name);
 
 // Save summary into state for reveal
 if (!state.item) state.item = {};
