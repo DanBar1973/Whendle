@@ -257,6 +257,7 @@ state.item.summary = meta?.extract || p.summary || "";
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
   document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
   document.getElementById("title").textContent=p.name; document.title=`Whendle — Events (${p.name})`;
+  const rules = document.querySelector('.rules'); if (rules) rules.style.display = '';
 }
 
 async function fetchSummary(name,fallback){
@@ -270,6 +271,19 @@ function addHistoryRow(guess,res,hint){
   const ht=(hint&&hint.trim())?hint:" ";
   row.innerHTML=`<div class="year">${guess}</div>${lampHTML(res)}<span class="hint">${ht}</span>`;
   document.getElementById("history").prepend(row);
+}
+  
+function revealSummary(){
+  // hide rules (so the summary sits higher)
+  const rules = document.querySelector('.rules');
+  if (rules) rules.style.display = 'none';
+
+  // show summary + scroll to it
+  const rev = document.getElementById('reveal');
+  if (rev) {
+    rev.style.display = 'block';
+    rev.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 async function finishRound(){
@@ -294,10 +308,11 @@ async function finishRound(){
   s.appendChild(boardLink);
 
   // Reveal summary (already fetched in pickEvent)
-  const rev = document.getElementById("reveal");
-  const sum = document.getElementById("summary");
-  sum.textContent = (state.item && state.item.summary) || "(No summary available.)";
-  rev.style.display = "block";
+const rev = document.getElementById("reveal");
+const sum = document.getElementById("summary");
+sum.textContent = (state.item && state.item.summary) || "(No summary available.)";
+revealSummary(); // hides rules, shows #reveal, smooth-scrolls
+
 
   // Record result (Supabase hook, if you added onRoundFinished in your module script)
   try {
