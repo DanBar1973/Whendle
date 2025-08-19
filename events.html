@@ -136,6 +136,44 @@ function setPortrait(imgEl, src, altText) {
   };
   imgEl.src = src;
 }
+function commonsThumb(url, width=800){
+  try{
+    const u = new URL(url);
+    if (!u.hostname.includes('upload.wikimedia.org')) return null;
+    // /wikipedia/commons/1/10/Name.jpg → /wikipedia/commons/thumb/1/10/Name.jpg/800px-Name.jpg
+    const m = u.pathname.match(/^\/wikipedia\/commons\/(.+\/)([^/]+)$/);
+    if (!m) return null;
+    const dir = m[1], file = m[2];
+    return `https://upload.wikimedia.org/wikipedia/commons/thumb/${dir}${file}/${width}px-${file}`;
+  } catch { return null; }
+}
+
+function setPortraitWithFallback(imgEl, srcs, altText){
+  imgEl.referrerPolicy = "no-referrer";
+  imgEl.crossOrigin = "anonymous";
+  imgEl.alt = altText || "";
+
+  // Build a try-list: original → 800px thumb → 512px thumb
+  const candidates = [];
+  for (const s of srcs) {
+    if (!s) continue;
+    candidates.push(s);
+    const t800 = commonsThumb(s, 800); if (t800) candidates.push(t800);
+    const t512 = commonsThumb(s, 512); if (t512) candidates.push(t512);
+  }
+
+  let i = 0;
+  const tryNext = () => {
+    if (i >= candidates.length) {
+      imgEl.style.objectFit = "contain";
+      imgEl.style.background = "#0e1320";
+      return;
+    }
+    imgEl.onerror = () => { i++; tryNext(); };
+    imgEl.src = candidates[i];
+  };
+  tryNext();
+}
 
 async function pickEvent(mode){
   let idx;
@@ -150,7 +188,12 @@ document.title = `Whendle — Events (${p.name})`;
 // Try Wikipedia first for a better image + summary
 const meta = await fetchWikiMeta(p.name);
 const imgSrc = meta?.image || p.img;
-setPortrait(img, imgSrc, p.name);
+// OLD
+// setPortrait(img, imgSrc, p.name);
+
+// NEW
+setPortraitWithFallback(img, [meta?.image, p.img], p.name);
+;
 
 // Save summary into state for reveal
 if (!state.item) state.item = {};
