@@ -137,13 +137,25 @@ function setPortrait(imgEl, src, altText) {
   imgEl.src = src;
 }
 
-function pickEvent(mode){
+async function pickEvent(mode){
   let idx;
   if (mode==="Daily"){ idx=todayIndex(); }
   else { const pool=practicePool(14); idx=pool[Math.floor(Math.random()*pool.length)]; }
   const p=EVENTS[idx];
   state.item=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false;
-  setImageWithFallback(document.getElementById("portrait"),p.img,p.name);
+  const img = document.getElementById("portrait");
+document.getElementById("title").textContent = p.name;
+document.title = `Whendle — Events (${p.name})`;
+
+// Try Wikipedia first for a better image + summary
+const meta = await fetchWikiMeta(p.name);
+const imgSrc = meta?.image || p.img;
+setPortrait(img, imgSrc, p.name);
+
+// Save summary into state for reveal
+if (!state.item) state.item = {};
+state.item.summary = meta?.extract || p.summary || "";
+
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
   document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
   document.getElementById("title").textContent=p.name; document.title=`Whendle — Events (${p.name})`;
@@ -163,9 +175,52 @@ function addHistoryRow(guess,res,hint){
 }
 
 async function finishRound(){
-  const s=document.getElementById("status");
-  if(state.win){ s.className="status success"; s.textContent=`Correct! “${state.item.name}” occurred in ${state.answer}.`; }
-  else{ s.className="status error"; s.textContent=`Out of tries! The correct year was ${state.answer}.`; }
+  const s = document.getElementById("status");
+  if (state.win) {
+    s.className = "status success";
+    s.textContent = `Correct! “${state.item.name}” happened in ${state.answer}.`;
+  } else {
+    s.className = "status error";
+    s.textContent = `Out of tries! The correct year was ${state.answer}.`;
+  }
+
+  // “See where you placed” → Events board
+  const boardLink = document.createElement("a");
+  boardLink.href = `/leaderboard.html?type=events`;
+  boardLink.textContent = "See where you placed →";
+  boardLink.style.display = "inline-block";
+  boardLink.style.marginTop = "8px";
+  boardLink.style.color = "#60a5fa";
+  boardLink.style.fontWeight = "600";
+  s.appendChild(document.createElement("br"));
+  s.appendChild(boardLink);
+
+  // Reveal summary (already fetched in pickEvent)
+  const rev = document.getElementById("reveal");
+  const sum = document.getElementById("summary");
+  sum.textContent = (state.item && state.item.summary) || "(No summary available.)";
+  rev.style.display = "block";
+
+  // Record result (Supabase hook, if you added onRoundFinished in your module script)
+  try {
+    const seed = `${todaySeedNumber()}|events`;
+    const runMode = document.getElementById('mode').value === 'Daily' ? 'daily' : 'practice';
+    if (window.onRoundFinished) {
+      await window.onRoundFinished({
+        gameType: 'events',
+        runMode,
+        seed,
+        entityName: state.item.name,
+        win: state.win,
+        tries: state.guesses.length,
+        msElapsed: null,
+        results: state.results
+      });
+    }
+  } catch (e) {
+    console.warn("recordGame failed (non-fatal)", e);
+  }
+}
 
   const boardLink=document.createElement("a");
   boardLink.href="/leaderboard.html?type=events";
@@ -205,9 +260,9 @@ function submitGuess(){
 
 document.getElementById("submitBtn").addEventListener("click",submitGuess);
 document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});
-document.getElementById("newRound").addEventListener("click",()=>{pickEvent(document.getElementById("mode").value)});
-document.getElementById("mode").addEventListener("change",e=>{pickEvent(e.target.value)});
-pickEvent(state.mode);
+document.getElementById("newRound").addEventListener("click", async ()=>{await pickEvent(document.getElementById("mode").value)});
+document.getElementById("mode").addEventListener("change", async e=>{await pickEvent(e.target.value)});
+await pickEvent(state.mode);
 </script>
 
 <!-- Supabase hook block -->
