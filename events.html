@@ -459,16 +459,18 @@ function addHistoryRow(guess,res,hint){
   document.getElementById("history").prepend(row);
 }
 function ensureLearnMoreUI(){
-  // only wire once
-  if (ensureLearnMoreUI._wired) return;
+  // Already wired?
+  if (ensureLearnMoreUI._wired) return true;
 
   const btn      = document.getElementById('learnMoreBtn');
   const modal    = document.getElementById('summaryModal');
   const backdrop = document.getElementById('modalBackdrop');
   const closeBtn = document.getElementById('modalCloseBtn');
 
-  // If DOM not parsed yet (modal block is below the script), bail quietly.
-  if (!btn || !modal || !backdrop || !closeBtn) return;
+  if (!btn || !modal || !backdrop || !closeBtn) {
+    // Not in DOM yet
+    return false;
+  }
 
   const close = () => {
     modal.style.display = 'none';
@@ -485,13 +487,12 @@ function ensureLearnMoreUI(){
 
   window._lm = { btn, modal, backdrop };
   ensureLearnMoreUI._wired = true;
+  return true;
 }
 
 function hideLearnMore(){
-  // Try to wire; if markup not in DOM yet, do nothing.
-  ensureLearnMoreUI();
-  if (!window._lm) return;
-
+  // Try to wire now; if markup not in DOM yet, bail quietly
+  if (!ensureLearnMoreUI()) return;
   const { btn, modal, backdrop } = window._lm;
   btn.style.display = 'none';
   btn.classList.remove('pulse');
@@ -499,9 +500,12 @@ function hideLearnMore(){
   backdrop.style.display = 'none';
 }
 
-
 function showLearnMore({title, summary, wiki}){
-  ensureLearnMoreUI();
+  // Ensure wiring exists now (in case this is the first call)
+  if (!ensureLearnMoreUI()) {
+    console.debug('[LearnMore] UI not wired (markup missing).');
+    return;
+  }
   const { btn } = window._lm;
   const body = document.getElementById('modalBody');
   const link = document.getElementById('wikiLink');
@@ -513,7 +517,10 @@ function showLearnMore({title, summary, wiki}){
 
   btn.style.display = 'inline-block';
   btn.classList.add('pulse');
+
+  console.debug('[LearnMore] Shown with title:', title);
 }
+
 
 async function finishRound(){
   const s = document.getElementById("status");
@@ -588,8 +595,12 @@ document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="
 document.getElementById("newRound").addEventListener("click", async ()=>{await pickEvent(document.getElementById("mode").value)});
 document.getElementById("mode").addEventListener("change", async e=>{await pickEvent(e.target.value)});
 window.addEventListener('DOMContentLoaded', () => {
+  // Make sure the modal/button markup is wired, then hide it for a fresh round
+  ensureLearnMoreUI();
+  hideLearnMore();
   pickEvent(state.mode);
 });
+
 
 </script>
 
