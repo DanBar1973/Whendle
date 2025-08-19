@@ -109,6 +109,42 @@
   text-decoration:underline;
 }
 
+/* Win pop + glow */
+.status.success{
+  animation: win-pop 400ms ease-out;
+  text-shadow: 0 0 12px rgba(34,197,94,.55);
+}
+@keyframes win-pop{
+  0%{ transform:scale(.96); opacity:.6 }
+  60%{ transform:scale(1.06); opacity:1 }
+  100%{ transform:scale(1); }
+}
+
+/* Portrait highlight on win */
+.portrait.win-glow{
+  box-shadow: 0 0 0 0 rgba(34,197,94,.6);
+  animation: ring 1.2s ease-out 1;
+}
+@keyframes ring{
+  0% { box-shadow: 0 0 0 0 rgba(34,197,94,.7) }
+  60% { box-shadow: 0 0 0 14px rgba(34,197,94,0) }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0) }
+}
+
+/* Emoji confetti pieces */
+.confetti{
+  position:fixed;
+  left:0; top:0; width:100vw; height:100vh;
+  pointer-events:none; z-index:70; overflow:hidden;
+}
+.confetti span{
+  position:absolute; font-size:20px; will-change:transform,opacity;
+  animation: fall 900ms ease-out forwards;
+}
+@keyframes fall{
+  0%{ transform: translate(var(--x,0), calc(var(--y,0) - 20px)) scale(1.2) rotate(0deg); opacity:1; }
+  100%{ transform: translate(var(--x,0), calc(var(--y,0) - 120px)) scale(1) rotate(25deg); opacity:0; }
+}
 
 </style>
 </head>
@@ -353,7 +389,39 @@ if (rules) rules.style.display = '';
   hideLearnMore();
 
 }
+// tiny confetti (no deps)
+function celebrateWin(){
+  const layer = document.createElement('div');
+  layer.className = 'confetti';
+  document.body.appendChild(layer);
 
+  const emojis = ['🎉','✨','🎊','🌟','🥳','✅'];
+  const W = window.innerWidth, H = window.innerHeight;
+  const pieces = 26;
+
+  for (let i=0;i<pieces;i++){
+    const s = document.createElement('span');
+    s.textContent = emojis[i % emojis.length];
+    const x = (W/2) + (Math.random()*220 - 110);
+    const y = (H/2) + (Math.random()*80 - 40);
+    s.style.left = x + 'px';
+    s.style.top = y + 'px';
+    s.style.setProperty('--x', (Math.random()*320 - 160) + 'px');
+    s.style.setProperty('--y', (Math.random()*240 + 140) + 'px');
+    s.style.animationDelay = (Math.random()*0.15) + 's';
+    layer.appendChild(s);
+  }
+
+  // cleanup
+  setTimeout(()=> layer.remove(), 1200);
+}
+
+function glowPortraitOnce(){
+  const img = document.getElementById('portrait');
+  if (!img) return;
+  img.classList.add('win-glow');
+  setTimeout(()=> img.classList.remove('win-glow'), 1200);
+}
 async function fetchSummary(name,fallback){
   try{const url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(name);
       const r=await fetch(url,{mode:"cors"}); if(r.ok){const d=await r.json(); if(d&&d.extract)return d.extract}}catch(e){}
@@ -423,6 +491,8 @@ async function finishRound(){
   if (state.win) {
     s.className = "status success";
     s.textContent = `Correct! “${state.item.name}” happened in ${state.answer}.`;
+      celebrateWin();
+  glowPortraitOnce();
   } else {
     s.className = "status error";
     s.textContent = `Out of tries! The correct year was ${state.answer}.`;
