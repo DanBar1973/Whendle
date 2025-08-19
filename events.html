@@ -244,12 +244,8 @@ function practicePool(count=14){
 
 let state={mode:"Daily",item:null,answer:"",guesses:[],results:[],over:false,win:false};
 
-function setImageWithFallback(el,src,alt){
-  el.onerror=()=>{el.style.objectFit='contain';el.style.background='#0e1320';};
-  el.alt=alt||""; el.src=src;
-}
 async function fetchWikiMetaSmart(title) {
-  // helper: REST summary (handles redirects)
+  // helper: REST summary (handles redirects; gives image, thumb, extract, page URL)
   const rest = async (t) => {
     const u = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t);
     const r = await fetch(u, { mode: "cors" });
@@ -264,11 +260,11 @@ async function fetchWikiMetaSmart(title) {
     };
   };
 
-  // 1) try exact
+  // 1) exact try
   const exact = await rest(title);
   if (exact) return exact;
 
-  // 2) fall back to search
+  // 2) search fallback
   try {
     const searchUrl =
       "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
@@ -287,6 +283,7 @@ async function fetchWikiMetaSmart(title) {
 
   return null;
 }
+
 
 
 function setPortrait(imgEl, src, altText) {
@@ -352,7 +349,8 @@ function setPortraitWithFallback(imgEl, srcs, altText){
   tryNext();
 }
 
-async function pickEvent(mode){
+async function pickEvent(mode) {
+  // 1) choose index
   let idx;
   if (mode === "Daily") {
     idx = todayIndex();
@@ -361,51 +359,59 @@ async function pickEvent(mode){
     idx = pool[Math.floor(Math.random() * pool.length)];
   }
 
+  // 2) set state for new round
   const p = EVENTS[idx];
-  state.item = p;
+  state.item   = p;
   state.answer = pad4(p.year);
   state.guesses = [];
   state.results = [];
   state.over = false;
-  state.win = false;
+  state.win  = false;
 
-  // Reset UI first
-  const img = document.getElementById("portrait");
+  // 3) reset UI
+  const imgEl = document.getElementById("portrait");
   document.getElementById("history").innerHTML = "";
   document.getElementById("status").textContent = "";
   document.getElementById("reveal").style.display = "none";
   document.getElementById("summary").textContent = "";
 
-  // Set title/heading once
+  // 4) set heading/title
   document.getElementById("title").textContent = p.name;
   document.title = `Whendle — Events (${p.name})`;
 
-  // Re-show rules for the new round
+  // 5) show rules again; hide Learn More UI for fresh round
   const rules = document.querySelector(".rules");
   if (rules) rules.style.display = "";
-
-  // Hide the “Learn more” button/modal until the round ends
   hideLearnMore();
 
-  // Pick best title to query
-  const qTitle = WIKI_TITLE[p.name] || p.name;
+  // 6) pick best wiki title to query
+  const qTitle = (typeof WIKI_TITLE !== "undefined" && WIKI_TITLE[p.name]) ? WIKI_TITLE[p.name] : p.name;
 
-  // Try Wikipedia for image + summary (with search fallback)
-  const meta = await fetchWikiMetaSmart(qTitle);
+  // 7) fetch wiki meta (robust to failures)
+  let meta = null;
+  try {
+    meta = await fetchWikiMetaSmart(qTitle);
+  } catch (e) {
+    console.warn("fetchWikiMetaSmart failed:", e);
+  }
 
-  // Prefer API thumb → API original → curated fallback
+  // 8) build image candidates: API thumb → API original → curated fallback
   const sources = [];
   if (meta?.thumb) sources.push(meta.thumb);
   if (meta?.image) sources.push(meta.image);
   if (p.img)       sources.push(p.img);
 
-  console.debug("Using wiki page:", meta?.pageTitle, "Image candidates:", sources);
-  setPortraitWithFallback(img, sources, p.name);
+  // final safety: always try at least the curated image
+  if (!sources.length && p.img) sources.push(p.img);
 
-  // Save summary + wiki link for the modal
+  console.debug("Using wiki page:", meta?.pageTitle || qTitle, "Image candidates:", sources);
+  setPortraitWithFallback(imgEl, sources, p.name);
+
+  // 9) store summary + wiki link for the modal
   state.item.summary = meta?.extract || p.summary || "";
-  state.item.wiki = meta?.page || (`https://en.wikipedia.org/wiki/${encodeURIComponent(p.name)}`);
+  state.item.wiki    = meta?.page || (`https://en.wikipedia.org/wiki/${encodeURIComponent(p.name)}`);
 }
+
 
 // tiny confetti (no deps)
 function celebrateWin(){
