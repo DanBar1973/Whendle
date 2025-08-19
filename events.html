@@ -532,12 +532,7 @@ async function finishRound(){
   const rules = document.querySelector('.rules');
   if (rules) rules.style.display = 'none';
 
-  // ...keep the rest of your function as-is (leaderboard link, showLearnMore, record, etc.)
-}
-
-
   // “See where you placed” → Events board
-  const boardLink = document.createElement("a");
   boardLink.href = `/leaderboard.html?type=events`;
   boardLink.textContent = "See where you placed →";
   boardLink.style.display = "inline-block";
@@ -547,15 +542,14 @@ async function finishRound(){
   s.appendChild(document.createElement("br"));
   s.appendChild(boardLink);
 
-  // Button show for reveal (already fetched in pickEvent)
+  // Show the Learn More CTA (summary already fetched in pickEvent)
   showLearnMore({
-  title: state.item.name,
-  summary: state.item.summary,
-  wiki: state.item.wiki
-});
+    title: state.item.name,
+    summary: state.item.summary,
+    wiki: state.item.wiki
+  });
 
-
-  // Record result (Supabase hook, if you added onRoundFinished in your module script)
+  // Record result (Supabase hook)
   try {
     const seed = `${todaySeedNumber()}|events`;
     const runMode = document.getElementById('mode').value === 'Daily' ? 'daily' : 'practice';
