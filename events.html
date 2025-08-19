@@ -121,7 +121,8 @@ async function fetchWikiMeta(title) {
     const d = await r.json();
     return {
       extract: d?.extract || "",
-      image: (d?.originalimage?.source || d?.thumbnail?.source) || null
+      image: d?.originalimage?.source || null
+      thumb: d?.thumbnail?.source || null
     };
   } catch { return null; }
 }
@@ -160,17 +161,21 @@ function setPortraitWithFallback(imgEl, srcs, altText){
   imgEl.crossOrigin = "anonymous";
   imgEl.alt = altText || "";
 
-  // Build a try-list: original → 800px thumb → 512px thumb
+  const seen = new Set();
   const candidates = [];
   for (const s of srcs) {
-    if (!s) continue;
+    if (!s || seen.has(s)) continue;
+    seen.add(s);
     candidates.push(s);
-    const t800 = commonsThumb(s, 800); if (t800) candidates.push(t800);
-    const t512 = commonsThumb(s, 512); if (t512) candidates.push(t512);
+
+    const t800 = commonsThumb(s, 800);
+    if (t800 && !seen.has(t800)) { seen.add(t800); candidates.push(t800); }
+
+    const t512 = commonsThumb(s, 512);
+    if (t512 && !seen.has(t512)) { seen.add(t512); candidates.push(t512); }
   }
 
   let i = 0;
-  
   const tryNext = () => {
     if (i >= candidates.length) {
       imgEl.style.objectFit = "contain";
@@ -196,20 +201,19 @@ document.title = `Whendle — Events (${p.name})`;
 
 // Try Wikipedia first for a better image + summary
 const meta = await fetchWikiMeta(p.name);
-const imgSrc = meta?.image || p.img;
-// OLD
-// setPortrait(img, imgSrc, p.name);
 
-// NEW
-// BEFORE
-// setPortraitWithFallback(img, [meta?.image, p.img], p.name);
+// Prefer API thumbnail (lightweight) → API original → curated fallback
+const sources = [];
+if (meta?.thumb)  sources.push(meta.thumb);
+if (meta?.image)  sources.push(meta.image);
+if (p.img)        sources.push(p.img);
 
-// AFTER (prefer your curated event image first)
-setPortraitWithFallback(img, [p.img, meta?.image], p.name);
+setPortraitWithFallback(img, sources, p.name);
 
 // Save summary into state for reveal
 if (!state.item) state.item = {};
 state.item.summary = meta?.extract || p.summary || "";
+
 
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
   document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
