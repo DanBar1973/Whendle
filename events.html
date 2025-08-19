@@ -459,14 +459,16 @@ function addHistoryRow(guess,res,hint){
   document.getElementById("history").prepend(row);
 }
 function ensureLearnMoreUI(){
-  // wire once
+  // only wire once
   if (ensureLearnMoreUI._wired) return;
-  ensureLearnMoreUI._wired = true;
 
-  const btn = document.getElementById('learnMoreBtn');
-  const modal = document.getElementById('summaryModal');
+  const btn      = document.getElementById('learnMoreBtn');
+  const modal    = document.getElementById('summaryModal');
   const backdrop = document.getElementById('modalBackdrop');
   const closeBtn = document.getElementById('modalCloseBtn');
+
+  // If DOM not parsed yet (modal block is below the script), bail quietly.
+  if (!btn || !modal || !backdrop || !closeBtn) return;
 
   const close = () => {
     modal.style.display = 'none';
@@ -476,24 +478,27 @@ function ensureLearnMoreUI(){
   btn.addEventListener('click', () => {
     modal.style.display = 'grid';
     backdrop.style.display = 'block';
-    // stop pulsing when opened
     btn.classList.remove('pulse');
   });
   closeBtn.addEventListener('click', close);
   backdrop.addEventListener('click', close);
 
-  // expose
   window._lm = { btn, modal, backdrop };
+  ensureLearnMoreUI._wired = true;
 }
 
 function hideLearnMore(){
+  // Try to wire; if markup not in DOM yet, do nothing.
   ensureLearnMoreUI();
+  if (!window._lm) return;
+
   const { btn, modal, backdrop } = window._lm;
   btn.style.display = 'none';
   btn.classList.remove('pulse');
   modal.style.display = 'none';
   backdrop.style.display = 'none';
 }
+
 
 function showLearnMore({title, summary, wiki}){
   ensureLearnMoreUI();
@@ -512,18 +517,24 @@ function showLearnMore({title, summary, wiki}){
 
 async function finishRound(){
   const s = document.getElementById("status");
+
   if (state.win) {
     s.className = "status success";
     s.textContent = `Correct! “${state.item.name}” happened in ${state.answer}.`;
-      celebrateWin();
-  glowPortraitOnce();
+    celebrateWin();
+    glowPortraitOnce();
   } else {
     s.className = "status error";
     s.textContent = `Out of tries! The correct year was ${state.answer}.`;
- // Hide instructions so results + CTA are more prominent
-const rules = document.querySelector('.rules');
-if (rules) rules.style.display = 'none';
- }
+  }
+
+  // Hide instructions so results + CTA are more prominent (both win & loss)
+  const rules = document.querySelector('.rules');
+  if (rules) rules.style.display = 'none';
+
+  // ...keep the rest of your function as-is (leaderboard link, showLearnMore, record, etc.)
+}
+
 
   // “See where you placed” → Events board
   const boardLink = document.createElement("a");
@@ -582,7 +593,10 @@ document.getElementById("submitBtn").addEventListener("click",submitGuess);
 document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});
 document.getElementById("newRound").addEventListener("click", async ()=>{await pickEvent(document.getElementById("mode").value)});
 document.getElementById("mode").addEventListener("change", async e=>{await pickEvent(e.target.value)});
-pickEvent(state.mode);
+window.addEventListener('DOMContentLoaded', () => {
+  pickEvent(state.mode);
+});
+
 </script>
 
 <!-- Supabase hook block -->
