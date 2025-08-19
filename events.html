@@ -222,27 +222,7 @@ async function finishRound(){
   }
 }
 
-  const boardLink=document.createElement("a");
-  boardLink.href="/leaderboard.html?type=events";
-  boardLink.textContent="See where you placed →";
-  boardLink.style.display="inline-block"; boardLink.style.marginTop="8px"; boardLink.style.color="#60a5fa"; boardLink.style.fontWeight="600";
-  s.appendChild(document.createElement("br")); s.appendChild(boardLink);
 
-  const rev=document.getElementById("reveal"); const sum=document.getElementById("summary");
-  const t=await fetchSummary(state.item.name,state.item.summary); sum.textContent=t||"(No summary available.)"; rev.style.display="block";
-
-  // === Record to Supabase ===
-  try{
-    const seedNum=todaySeedNumber(); const seed=`${seedNum}|events`;
-    const runMode=document.getElementById('mode').value==='Daily'?'daily':'practice';
-    if (window.onRoundFinished) {
-      await window.onRoundFinished({
-        gameType:'events', runMode, seed,
-        entityName: state.item.name, win: state.win, tries: state.guesses.length,
-        msElapsed: null, results: state.results
-      });
-    }
-  }catch(e){ console.warn("recordGame failed (non-fatal)", e); }
 }
 
 function submitGuess(){
@@ -262,7 +242,7 @@ document.getElementById("submitBtn").addEventListener("click",submitGuess);
 document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});
 document.getElementById("newRound").addEventListener("click", async ()=>{await pickEvent(document.getElementById("mode").value)});
 document.getElementById("mode").addEventListener("change", async e=>{await pickEvent(e.target.value)});
-await pickEvent(state.mode);
+pickEvent(state.mode);
 </script>
 
 <!-- Supabase hook block -->
