@@ -113,19 +113,53 @@ function setImageWithFallback(el,src,alt){
   el.onerror=()=>{el.style.objectFit='contain';el.style.background='#0e1320';};
   el.alt=alt||""; el.src=src;
 }
-async function fetchWikiMeta(title) {
-  try {
-    const url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(title);
-    const r = await fetch(url, { mode: "cors" });
-    if (!r.ok) return null;
-    const d = await r.json();
-    return {
-      extract: d?.extract || "",
-      image: d?.originalimage?.source || null,
-      thumb: d?.thumbnail?.source || null
-    };
-  } catch { return null; }
+async function fetchWikiMetaSmart(title) {
+  const OVERRIDES = new Map([
+    ["French Revolution begins (Storming of the Bastille)", "Storming of the Bastille"],
+    ["First iPhone released", "IPhone (1st generation)"],
+    ["World Wide Web proposed", "World Wide Web"],
+    ["First Powered Flight (Wright Brothers)", "Wright brothers"],
+    ["Printing press introduced in Europe (Gutenberg)", "Printing press"],
+  ]);
+
+  // Build candidate titles to try (original → overrides → variations)
+  const cand = [];
+  cand.push(title);
+  if (OVERRIDES.has(title)) cand.unshift(OVERRIDES.get(title));
+
+  // If there are parentheses, try inside and before them
+  const m = title.match(/^(.*?)\s*\((.+)\)\s*$/);
+  if (m) {
+    const before = m[1].trim();
+    const inside = m[2].trim();
+    if (inside) cand.push(inside);
+    if (before) cand.push(before);
+  }
+
+  // Normalize some punctuation variants
+  cand.push(title.replace(/—/g, "-"));
+  cand.push(title.replace(/—.*$/, "").trim());
+
+  // De-duplicate
+  const seen = new Set(); const titles = cand.filter(t => t && !seen.has(t) && seen.add(t));
+
+  for (const t of titles) {
+    try {
+      const url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t);
+      const r = await fetch(url, { mode: "cors", redirect: "follow" });
+      if (!r.ok) { continue; }
+      const d = await r.json();
+      return {
+        page: t,
+        extract: d?.extract || "",
+        image: d?.originalimage?.source || null,
+        thumb: d?.thumbnail?.source || null
+      };
+    } catch {}
+  }
+  return null;
 }
+
 
 function setPortrait(imgEl, src, altText) {
   imgEl.referrerPolicy = "no-referrer";
@@ -200,20 +234,22 @@ async function pickEvent(mode){
 document.getElementById("title").textContent = p.name;
 document.title = `Whendle — Events (${p.name})`;
 
-// Try Wikipedia first for a better image + summary
-const meta = await fetchWikiMeta(p.name);
+// Try Wikipedia first for a better image + summary (smart lookup)
+const meta = await fetchWikiMetaSmart(p.name);
 
-// Prefer curated image → API thumbnail → API original
+// Prefer API thumbnail (lightweight) → API original → curated fallback
 const sources = [];
-if (p.img)        sources.push(p.img);
 if (meta?.thumb)  sources.push(meta.thumb);
 if (meta?.image)  sources.push(meta.image);
+if (p.img)        sources.push(p.img);
 
 setPortraitWithFallback(img, sources, p.name);
 
-// Save summary into state for reveal
+// Save summary for reveal
 if (!state.item) state.item = {};
 state.item.summary = meta?.extract || p.summary || "";
+
+console.debug("Using wiki page:", meta?.page, "Image candidates:", sources);
 
 
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
