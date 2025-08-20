@@ -136,6 +136,17 @@ const PEOPLE=[
  {name:"Isaac Newton",year:1643,img:"https://upload.wikimedia.org/wikipedia/commons/d/d4/Sir_Isaac_Newton_%281642-1727%29.jpg",summary:"Isaac Newton (1643–1727) was an English mathematician, physicist, and astronomer who formulated the laws of motion and universal gravitation."},
  {name:"Nikola Tesla",year:1856,img:"https://upload.wikimedia.org/wikipedia/commons/d/d4/N.Tesla.JPG",summary:"Nikola Tesla (1856–1943) was a Serbian-American inventor and engineer known for AC power systems and numerous innovations."}
 ];
+function ensureDisplayName(){
+  try {
+    const KEY = 'whendle_display_name';
+    let name = localStorage.getItem(KEY);
+    if (!name){
+      name = prompt("Pick a display name for the leaderboard:", "")?.trim();
+      if (name) localStorage.setItem(KEY, name);
+    }
+    return name || "Player";
+  } catch { return "Player"; }
+}
 
 function pad4(n){return n.toString().padStart(4,"0");}
 function score(a,g){const m=[0,1,2,3].map(i=>a[i]===g[i]);const greens=m.filter(Boolean).length;const ra={},rg={};for(let i=0;i<4;i++){if(!m[i]){ra[a[i]]=(ra[a[i]]||0)+1;rg[g[i]]=(rg[g[i]]||0)+1}}let amb=0;for(const d in rg){amb+=Math.min(rg[d]||0,ra[d]||0)}const red=4-greens-amb;return{green:greens,amber:amb,red:red}}
@@ -155,7 +166,8 @@ function practicePool(count=14){
   return indices.slice(0, Math.min(count, indices.length));
 }
 
-let state={mode:"Daily",person:null,answer:"",guesses:[],results:[],over:false,win:false};
+let state={mode:"Daily",person:null,answer:"",guesses:[],results:[],over:false,win:false,startedAt:null};
+
 
 function setImageWithFallback(el,src){
   el.onerror=()=>{el.style.objectFit='contain';el.style.background='#0e1320';};
@@ -232,7 +244,7 @@ async function pickPerson(mode){
     idx = pool[Math.floor(Math.random()*pool.length)];
   }
   const p=PEOPLE[idx];
-  state.person=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false;
+  state.person=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false; state.startedAt = performance.now();
   const img=document.getElementById("portrait");
 document.getElementById("title").textContent = p.name;
 
@@ -337,11 +349,21 @@ async function finishRound(){
   if(state.win){
     s.className="status success";
     s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`;
+    const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
+const seconds = Math.round(msElapsed/1000);
+s.textContent += `  (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
+
   } else {
     s.className="status error";
     s.textContent=`Out of tries! The correct year was ${state.answer}.`;
+    const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
+const seconds = Math.round(msElapsed/1000);
+s.textContent += `  (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
+
   }
 
+  // Compute and send elapsed time
+  const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
 
   // “See where you placed” link
   const boardLink=document.createElement("a");
@@ -375,18 +397,20 @@ showLearnMore({
 // (optional) win flair
 if (state.win) { celebrateWin(); glowPortraitOnce(); }
 
-  // === Record to Supabase ===
-  try{
-    const d=new Date(); const seedNum=todaySeedNumber(); const seed=`${seedNum}|births`;
-    const runMode=document.getElementById('mode').value==='Daily'?'daily':'practice';
-    if (window.onRoundFinished) {
-      await window.onRoundFinished({
-        gameType:'births', runMode, seed,
-        entityName: state.person.name, win: state.win, tries: state.guesses.length,
-        msElapsed: null, results: state.results
-      });
-    }
-  }catch(e){ console.warn("recordGame failed (non-fatal)", e); }
+ // === Record to Supabase ===
+try{
+  const seed=`${todaySeedNumber()}|births`;
+  const runMode=document.getElementById('mode').value==='Daily'?'daily':'practice';
+  const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
+  if (window.onRoundFinished) {
+    await window.onRoundFinished({
+      gameType:'births', runMode, seed,
+      entityName: state.person.name, win: state.win, tries: state.guesses.length,
+      msElapsed, results: state.results
+    });
+  }
+}catch(e){ console.warn("recordGame failed (non-fatal)", e); }
+
 }
 
 function submitGuess(){
@@ -416,6 +440,14 @@ pickPerson(state.mode);
   const deviceId = getDeviceId();
   const country = await fetchCountry();
   const userId = await ensureUser(deviceId, country);
+const displayName = ensureDisplayName();
+try {
+  if (window.updateHandle) {
+    await window.updateHandle(userId, displayName);
+  } else if (typeof updateHandle === 'function') {
+    await updateHandle(userId, displayName);
+  }
+} catch {}
 
   // Expose to game script
   window.onRoundFinished = async ({ gameType, runMode, seed, entityName, win, tries, msElapsed, results }) => {
