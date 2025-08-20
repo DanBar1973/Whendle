@@ -73,7 +73,7 @@ export async function recordGame({
     entity_name: entityName,
     won,
     tries,
-    ms_elapsed: msElapsed ?? null,
+    ms_elapsed: msElapsed,
     lamps_grid: lampsGrid
   }]);
 
