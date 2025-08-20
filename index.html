@@ -22,6 +22,44 @@
   .year{font-weight:800;letter-spacing:1px}.hint{min-width:120px;text-align:left;color:var(--muted);font-size:.9rem}.status{margin-top:10px;font-weight:700}.success{color:var(--green)}.error{color:var(--red)}
   h2.title{margin:4px 0 2px 0;font-size:1.35rem}
   .rules{margin:0;padding-left:18px}.rules li{margin:2px 0}
+
+  /* Learn-more button */
+.learnmore-btn{
+  position:fixed; right:16px; bottom:16px; z-index:50;
+  background:linear-gradient(180deg,#3b82f6,#2563eb);
+  border:1px solid #1e40af; color:white; font-weight:700;
+  padding:12px 14px; border-radius:999px; cursor:pointer; display:none;
+  box-shadow:0 10px 20px rgba(0,0,0,.35);
+}
+.learnmore-btn.pulse{ animation:pulse 1.2s ease-in-out infinite; }
+@keyframes pulse{ 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+
+/* Modal */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; z-index:60;
+}
+.modal{
+  position:fixed; inset:0; display:none; place-items:center; z-index:61;
+}
+.modal > .panel{
+  width:min(760px,92%); background:linear-gradient(180deg,#1a2231,#141a26);
+  border:1px solid #1f2634; border-radius:16px; padding:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5); color:var(--text);
+}
+.modal .head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+.modal .head h3{ margin:0; font-size:1.1rem; }
+.modal .close{ background:#0f1420; border:1px solid #263043; color:var(--text); padding:6px 10px; border-radius:10px; cursor:pointer; }
+.modal .body{ white-space:pre-wrap; line-height:1.45; font-size:.95rem; color:var(--text); }
+.modal .foot{ display:flex; justify-content:flex-end; margin-top:12px; }
+.modal a.wiki{ color:#93c5fd; text-decoration:none; font-weight:700; }
+.modal a.wiki:hover{ text-decoration:underline; }
+
+/* Win pop + portrait glow (optional) */
+.status.success{ animation: win-pop 800ms ease-out; text-shadow:0 0 12px rgba(34,197,94,.55); }
+@keyframes win-pop{ 0%{transform:scale(.96);opacity:.6} 60%{transform:scale(1.06);opacity:1} 100%{transform:scale(1)} }
+.portrait.win-glow{ box-shadow:0 0 0 0 rgba(34,197,94,.6); animation:ring 2.4s ease-out 1; }
+@keyframes ring{ 0%{box-shadow:0 0 0 0 rgba(34,197,94,.7)} 60%{box-shadow:0 0 0 14px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
+
 </style>
 </head>
 <body>
@@ -182,6 +220,12 @@ async function pickPerson(mode){
   state.person=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false;
   const img=document.getElementById("portrait");
 document.getElementById("title").textContent = p.name;
+
+  // Re-show the rules for a fresh round and hide the CTA until the end
+const rules = document.querySelector('.rules');
+if (rules) rules.style.display = '';
+hideLearnMore();
+
 document.title = `Whendle — Births (${p.name})`;
 
 // Try Wikipedia first
@@ -218,6 +262,61 @@ function addHistoryRow(guess,res,hint){
   document.getElementById("history").prepend(row);
 }
 
+function ensureLearnMoreUI(){
+  if (ensureLearnMoreUI._wired) return;
+  const btn      = document.getElementById('learnMoreBtn');
+  const modal    = document.getElementById('summaryModal');
+  const backdrop = document.getElementById('modalBackdrop');
+  const closeBtn = document.getElementById('modalCloseBtn');
+  if (!btn || !modal || !backdrop || !closeBtn) return;
+
+  const close = () => { modal.style.display='none'; backdrop.style.display='none'; };
+  btn.addEventListener('click', ()=>{ modal.style.display='grid'; backdrop.style.display='block'; btn.classList.remove('pulse'); });
+  closeBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', close);
+
+  window._lm = { btn, modal, backdrop };
+  ensureLearnMoreUI._wired = true;
+}
+function hideLearnMore(){
+  ensureLearnMoreUI();
+  if (!window._lm) return;
+  const { btn, modal, backdrop } = window._lm;
+  btn.style.display='none'; btn.classList.remove('pulse');
+  modal.style.display='none'; backdrop.style.display='none';
+}
+function showLearnMore({title, summary, wiki}){
+  ensureLearnMoreUI();
+  const { btn } = window._lm;
+  const body = document.getElementById('modalBody');
+  const link = document.getElementById('wikiLink');
+  const heading = document.getElementById('modalTitle');
+  heading.textContent = `Learn more — ${title}`;
+  body.textContent = summary || '(No summary available.)';
+  link.href = wiki;
+  btn.style.display='inline-block';
+  btn.classList.add('pulse');
+}
+
+// (optional) tiny win effects
+function celebrateWin(){
+  const layer=document.createElement('div'); layer.className='confetti'; document.body.appendChild(layer);
+  const emojis=['🎉','✨','🎊','🌟','🥳','✅'], W=innerWidth, H=innerHeight, pieces=26;
+  for(let i=0;i<pieces;i++){ const s=document.createElement('span'); s.textContent=emojis[i%emojis.length];
+    const x=(W/2)+(Math.random()*220-110), y=(H/2)+(Math.random()*80-40);
+    s.style.left=x+'px'; s.style.top=y+'px';
+    s.style.setProperty('--x',(Math.random()*320-160)+'px');
+    s.style.setProperty('--y',(Math.random()*240+140)+'px');
+    s.style.animationDelay=(Math.random()*0.15)+'s';
+    layer.appendChild(s);
+  }
+  setTimeout(()=>layer.remove(), 2600);
+}
+function glowPortraitOnce(){
+  const img=document.getElementById('portrait'); if(!img) return;
+  img.classList.add('win-glow'); setTimeout(()=>img.classList.remove('win-glow'), 1200);
+}
+
 async function finishRound(){
   const s=document.getElementById("status");
   if(state.win){
@@ -238,6 +337,20 @@ async function finishRound(){
 
   const rev=document.getElementById("reveal"); const sum=document.getElementById("summary");
   const t=await fetchSummary(state.person.name,state.person.summary); sum.textContent=t||"(No summary available.)"; rev.style.display="block";
+
+  // Hide instructions so results + CTA are more prominent
+const rules = document.querySelector('.rules');
+if (rules) rules.style.display = 'none';
+
+// Show Learn More button using summary+link already saved during pickPerson()
+showLearnMore({
+  title: state.person.name,
+  summary: state.person.summary,
+  wiki: `https://en.wikipedia.org/wiki/${encodeURIComponent(state.person.name)}`
+});
+
+// (optional) win flair
+if (state.win) { celebrateWin(); glowPortraitOnce(); }
 
   // === Record to Supabase ===
   try{
@@ -288,5 +401,21 @@ pickPerson(state.mode);
     try{ await navigator.clipboard.writeText(shareText); }catch{}
   };
 </script>
+
+<button id="learnMoreBtn" class="learnmore-btn" type="button">Learn more ↗</button>
+<div id="modalBackdrop" class="modal-backdrop"></div>
+<div id="summaryModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="panel">
+    <div class="head">
+      <h3 id="modalTitle">Learn more</h3>
+      <button class="close" id="modalCloseBtn" type="button">Close</button>
+    </div>
+    <div id="modalBody" class="body"></div>
+    <div class="foot">
+      <a id="wikiLink" class="wiki" target="_blank" rel="noopener noreferrer">Open on Wikipedia ↗</a>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
