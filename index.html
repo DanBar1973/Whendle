@@ -350,8 +350,16 @@ async function finishRound(){
   boardLink.style.display="inline-block"; boardLink.style.marginTop="8px"; boardLink.style.color="#60a5fa"; boardLink.style.fontWeight="600";
   s.appendChild(document.createElement("br")); s.appendChild(boardLink);
 
-  const rev=document.getElementById("reveal"); const sum=document.getElementById("summary");
-  const t=await fetchSummary(state.person.name,state.person.summary); sum.textContent=t||"(No summary available.)"; rev.style.display="block";
+  // Keep inline reveal hidden; only use the Learn‑more modal/button
+// (Optionally refresh summary text silently)
+const t = await fetchSummary(state.person.name, state.person.summary);
+
+// Show Learn More button using summary+link already saved during pickPerson()
+showLearnMore({
+  title: state.person.name,
+  summary: t || state.person.summary || "",
+  wiki: `https://en.wikipedia.org/wiki/${encodeURIComponent(state.person.name)}`
+});
 
   // Hide instructions so results + CTA are more prominent
 const rules = document.querySelector('.rules');
