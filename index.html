@@ -54,6 +54,23 @@
 .modal a.wiki{ color:#93c5fd; text-decoration:none; font-weight:700; }
 .modal a.wiki:hover{ text-decoration:underline; }
 
+
+  
+  .cal-badge{
+  display:inline-grid; grid-template-rows: auto 1fr; align-items:center; justify-items:center;
+  width:28px; height:30px; margin-right:8px; border-radius:6px; overflow:hidden;
+  border:1px solid #263043; box-shadow:0 2px 6px rgba(0,0,0,.25);
+  background:#0f1420;
+}
+.cal-month{
+  width:100%; text-align:center; font-size:10px; line-height:1; letter-spacing:.5px;
+  padding-top:3px; padding-bottom:3px; font-weight:800;
+  background:#2563eb; color:#eaf2ff; border-bottom:1px solid #1e40af;
+}
+.cal-day{
+  font-size:14px; font-weight:800; color:#e8ecf1; line-height:1; padding-top:4px;
+}
+
 /* Win pop + portrait glow (optional) */
 .status.success{ animation: win-pop 800ms ease-out; text-shadow:0 0 12px rgba(34,197,94,.55); }
 @keyframes win-pop{ 0%{transform:scale(.96);opacity:.6} 60%{transform:scale(1.06);opacity:1} 100%{transform:scale(1)} }
@@ -80,7 +97,14 @@
 <body>
 <div class="container">
   <header>
-    <h1 style="font-size:1.4rem;margin:0;">📅 Whendle — Births (Bornle)</h1>
+    <h1 style="font-size:1.4rem;margin:0;">
+  <span class="cal-badge" aria-label="Today">
+    <span class="cal-month" id="calMonth"></span>
+    <span class="cal-day" id="calDay"></span>
+  </span>
+  Whendle — Births (Bornle)
+</h1>
+
     <nav>
       <a class="active" href="/index.html">Births</a>
       <a href="/events.html">Events</a>
@@ -234,6 +258,15 @@ function setPortraitWithFallback(imgEl, srcs, altText){
   };
   tryNext();
 }
+
+(function initCalendarBadge(){
+  const m = document.getElementById("calMonth");
+  const d = document.getElementById("calDay");
+  if (!m || !d) return;
+  const now = new Date();
+  m.textContent = now.toLocaleString(undefined, { month: "short" }).toUpperCase(); // e.g., AUG
+  d.textContent = String(now.getDate()); // 1–31
+})();
 
 async function pickPerson(mode){
   let idx;
