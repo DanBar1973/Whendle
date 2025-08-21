@@ -54,22 +54,35 @@
 .modal a.wiki{ color:#93c5fd; text-decoration:none; font-weight:700; }
 .modal a.wiki:hover{ text-decoration:underline; }
 
+h1 .calendar-icon {
+  font-size: 1.1em;   /* slightly smaller than surrounding text */
+  line-height: 1;     /* avoid cropping */
+  vertical-align: middle;
+}
 
   
-  .cal-badge{
-  display:inline-grid; grid-template-rows: auto 1fr; align-items:center; justify-items:center;
-  width:28px; height:30px; margin-right:8px; border-radius:6px; overflow:hidden;
-  border:1px solid #263043; box-shadow:0 2px 6px rgba(0,0,0,.25);
-  background:#0f1420;
+  .cal-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7em;        /* smaller than the 1.4rem h1 */
+  line-height: 1;
+  margin-right: 6px;       /* space between badge and title */
+  background: #2563eb;
+  color: white;
+  border-radius: 6px;
+  padding: 2px 4px;
 }
-.cal-month{
-  width:100%; text-align:center; font-size:10px; line-height:1; letter-spacing:.5px;
-  padding-top:3px; padding-bottom:3px; font-weight:800;
-  background:#2563eb; color:#eaf2ff; border-bottom:1px solid #1e40af;
+.cal-month {
+  font-size: 0.6em;
+  text-transform: uppercase;
 }
-.cal-day{
-  font-size:14px; font-weight:800; color:#e8ecf1; line-height:1; padding-top:4px;
+.cal-day {
+  font-size: 1.2em;
+  font-weight: 700;
 }
+
 
 /* Win pop + portrait glow (optional) */
 .status.success{ animation: win-pop 800ms ease-out; text-shadow:0 0 12px rgba(34,197,94,.55); }
@@ -488,6 +501,22 @@ try {
     const shareText = buildShare({ title:`Whendle — ${entityName}`, tries, won:win, rows:results, url:"https://whendle.org" });
     try{ await navigator.clipboard.writeText(shareText); }catch{}
   };
+
+  // … all your game logic functions above …
+
+// Init game
+pickPerson(state.mode);
+
+// === Calendar Badge (today’s date) ===
+(function updateCalendarBadge(){
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const d = new Date();
+  const month = months[d.getMonth()];
+  const day = d.getDate();
+  document.getElementById("calMonth").textContent = month;
+  document.getElementById("calDay").textContent = day;
+})();
+
 </script>
 
 <button id="learnMoreBtn" class="learnmore-btn" type="button">Learn more ↗</button>
