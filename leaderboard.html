@@ -123,20 +123,22 @@ async function loadLeaderboard(scope){
   const seed = todaySeedFor(type);
   meta.textContent = `Mode: Daily • ${type} • seed ${seed}` + (scope==="country" && myCountry ? ` • ${myCountry}` : "");
   
-  let query = supabase.from("games")
-  .select("tries, ms_elapsed, users (handle, country)")
+let query = supabase.from("games")
+  .select("tries, ms_elapsed, users:users!inner(handle, country)") // keep the inner join alias
   .eq("game_type", type)
   .eq("run_mode", "daily")
   .eq("seed", seed)
   .eq("won", true)
-  .not("ms_elapsed", "is", null)   // <- only show rows that recorded time
   .order("tries", { ascending: true })
-  .order("ms_elapsed", { ascending: true })
+  .order("ms_elapsed", { ascending: true, nullsFirst: false }) // shows timed runs first
+  .not("ms_elapsed", "is", null) // 👈 filter out null times
   .limit(100);
+  
 
 if (scope === "country" && myCountry) {
   query = query.eq("users.country", myCountry);
 }
+
 
   }
   const { data, error } = await query;
