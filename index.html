@@ -402,14 +402,13 @@ s.textContent += `  (${state.guesses.length} ${state.guesses.length===1?'guess':
   } else {
     s.className="status error";
     s.textContent=`Out of tries! The correct year was ${state.answer}.`;
-    const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
+
 const seconds = Math.round(msElapsed/1000);
 s.textContent += `  (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
 
   }
 
-  // Compute and send elapsed time
-  const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
+ 
 
   // “See where you placed” link
   const boardLink=document.createElement("a");
@@ -432,13 +431,6 @@ showLearnMore({
   // Hide instructions so results + CTA are more prominent
 const rules = document.querySelector('.rules');
 if (rules) rules.style.display = 'none';
-
-// Show Learn More button using summary+link already saved during pickPerson()
-showLearnMore({
-  title: state.person.name,
-  summary: state.person.summary,
-  wiki: `https://en.wikipedia.org/wiki/${encodeURIComponent(state.person.name)}`
-});
 
 // (optional) win flair
 if (state.win) { celebrateWin(); glowPortraitOnce(); }
@@ -476,24 +468,19 @@ document.getElementById("submitBtn").addEventListener("click",submitGuess);
 document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});
 document.getElementById("newRound").addEventListener("click",()=>{pickPerson(document.getElementById("mode").value)});
 document.getElementById("mode").addEventListener("change",e=>{pickPerson(e.target.value)});
-pickPerson(state.mode);
 </script>
 
 <!-- Supabase hook block -->
 <script type="module">
-  import { getDeviceId, fetchCountry, ensureUser, recordGame, buildShare } from "/js/db.js";
+  import { getDeviceId, fetchCountry, ensureUser, recordGame, buildShare, updateHandle } from "/js/db.js";
 
   const deviceId = getDeviceId();
   const country = await fetchCountry();
   const userId = await ensureUser(deviceId, country);
-const displayName = ensureDisplayName();
-try {
-  if (window.updateHandle) {
-    await window.updateHandle(userId, displayName);
-  } else if (typeof updateHandle === 'function') {
-    await updateHandle(userId, displayName);
-  }
-} catch {}
+const displayName =
+  (window.ensureDisplayName && window.ensureDisplayName()) || "Player";
+await updateHandle(userId, displayName);
+
 
   // Expose to game script
   window.onRoundFinished = async ({ gameType, runMode, seed, entityName, win, tries, msElapsed, results }) => {
