@@ -20,6 +20,12 @@ export function getDeviceId() {
   }
 }
 
+export async function updateHandle(userId, handle) {
+  if (!userId || !handle) return;
+  const { error } = await supabase.from("users").update({ handle }).eq("id", userId);
+  if (error) console.warn("updateHandle error:", error);
+}
+
 // Optionally fetch country via Vercel (we’ll add /api/country below)
 export async function fetchCountry() {
   try {
