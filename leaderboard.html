@@ -124,7 +124,7 @@ async function loadLeaderboard(scope){
   meta.textContent = `Mode: Daily • ${type} • seed ${seed}` + (scope==="country" && myCountry ? ` • ${myCountry}` : "");
   
 let query = supabase.from("games")
-  .select("tries, ms_elapsed, users:users!inner(handle, country)") // keep the inner join alias
+  .select("tries, ms_elapsed, users:users(handle, country)") // keep the inner join alias
   .eq("game_type", type)
   .eq("run_mode", "daily")
   .eq("seed", seed)
