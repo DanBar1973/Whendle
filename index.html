@@ -391,65 +391,59 @@ function glowPortraitOnce(){
 }
 
 async function finishRound(){
-  const s=document.getElementById("status");
-  if(state.win){
-    s.className="status success";
-    s.textContent=`Correct! ${state.person.name} was born in ${state.answer}.`;
-    const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
-const seconds = Math.round(msElapsed/1000);
-s.textContent += `  (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
+  const s = document.getElementById("status");
 
-  } else {
-    s.className="status error";
-    s.textContent=`Out of tries! The correct year was ${state.answer}.`;
-
-const seconds = Math.round(msElapsed/1000);
-s.textContent += `  (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
-
-  }
-
- 
-
-  // “See where you placed” link
-  const boardLink=document.createElement("a");
-  boardLink.href="/leaderboard.html?type=births";
-  boardLink.textContent="See where you placed →";
-  boardLink.style.display="inline-block"; boardLink.style.marginTop="8px"; boardLink.style.color="#60a5fa"; boardLink.style.fontWeight="600";
-  s.appendChild(document.createElement("br")); s.appendChild(boardLink);
-
-  // Keep inline reveal hidden; only use the Learn‑more modal/button
-// (Optionally refresh summary text silently)
-const t = await fetchSummary(state.person.name, state.person.summary);
-
-// Show Learn More button using summary+link already saved during pickPerson()
-showLearnMore({
-  title: state.person.name,
-  summary: t || state.person.summary || "",
-  wiki: `https://en.wikipedia.org/wiki/${encodeURIComponent(state.person.name)}`
-});
-
-  // Hide instructions so results + CTA are more prominent
-const rules = document.querySelector('.rules');
-if (rules) rules.style.display = 'none';
-
-// (optional) win flair
-if (state.win) { celebrateWin(); glowPortraitOnce(); }
-
- // === Record to Supabase ===
-try{
-  const seed=`${todaySeedNumber()}|births`;
-  const runMode=document.getElementById('mode').value==='Daily'?'daily':'practice';
+  // compute once for both win/loss
   const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
-  if (window.onRoundFinished) {
-    await window.onRoundFinished({
-      gameType:'births', runMode, seed,
-      entityName: state.person.name, win: state.win, tries: state.guesses.length,
-      msElapsed, results: state.results
-    });
-  }
-}catch(e){ console.warn("recordGame failed (non-fatal)", e); }
+  const seconds = Math.round(msElapsed / 1000);
 
+  if (state.win){
+    s.className = "status success";
+    s.textContent = `Correct! ${state.person.name} was born in ${state.answer}. (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
+    celebrateWin();
+    glowPortraitOnce();
+  } else {
+    s.className = "status error";
+    s.textContent = `Out of tries! The correct year was ${state.answer}. (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
+  }
+
+  // “See where you placed”
+  const boardLink = document.createElement("a");
+  boardLink.href = "/leaderboard.html?type=births";
+  boardLink.textContent = "See where you placed →";
+  boardLink.style.display = "inline-block";
+  boardLink.style.marginTop = "8px";
+  boardLink.style.color = "#60a5fa";
+  boardLink.style.fontWeight = "600";
+  s.appendChild(document.createElement("br"));
+  s.appendChild(boardLink);
+
+  // Learn‑more CTA (refresh summary silently, but keep card hidden)
+  const t = await fetchSummary(state.person.name, state.person.summary);
+  showLearnMore({
+    title: state.person.name,
+    summary: t || state.person.summary || "",
+    wiki: `https://en.wikipedia.org/wiki/${encodeURIComponent(state.person.name)}`
+  });
+
+  // Hide instructions
+  const rules = document.querySelector('.rules');
+  if (rules) rules.style.display = 'none';
+
+  // Record to Supabase
+  try{
+    const seed = `${todaySeedNumber()}|births`;
+    const runMode = document.getElementById('mode').value === 'Daily' ? 'daily' : 'practice';
+    if (window.onRoundFinished) {
+      await window.onRoundFinished({
+        gameType: 'births', runMode, seed,
+        entityName: state.person.name, win: state.win, tries: state.guesses.length,
+        msElapsed, results: state.results
+      });
+    }
+  }catch(e){ console.warn("recordGame failed (non-fatal)", e); }
 }
+
 
 function submitGuess(){
   if(state.over)return;
@@ -464,10 +458,14 @@ function submitGuess(){
   else if(state.guesses.length>=6){ state.over=true; state.win=false; finishRound(); }
 }
 
-document.getElementById("submitBtn").addEventListener("click",submitGuess);
-document.getElementById("yearInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitGuess()});
-document.getElementById("newRound").addEventListener("click",()=>{pickPerson(document.getElementById("mode").value)});
-document.getElementById("mode").addEventListener("change",e=>{pickPerson(e.target.value)});
+document.getElementById("submitBtn").addEventListener("click", submitGuess);
+document.getElementById("yearInput").addEventListener("keydown", e => { if (e.key === "Enter") submitGuess(); });
+document.getElementById("newRound").addEventListener("click", () => { pickPerson(document.getElementById("mode").value); });
+document.getElementById("mode").addEventListener("change", e => { pickPerson(e.target.value); });
+
+// start a round
+pickPerson(state.mode);
+
 </script>
 
 <!-- Supabase hook block -->
