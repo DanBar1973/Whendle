@@ -419,6 +419,12 @@ async function finishRound(){
   s.appendChild(document.createElement("br"));
   s.appendChild(boardLink);
 
+  // Attach modal opener instead of navigating away
+  boardLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.openLeaderboardModal?.("births"); // or "events" in events.html
+  });
+  
   // Learn‑more CTA (refresh summary silently, but keep card hidden)
   const t = await fetchSummary(state.person.name, state.person.summary);
   showLearnMore({
@@ -471,7 +477,7 @@ pickPerson(state.mode);
 
 <!-- Supabase hook block -->
 <script type="module">
-  import { getDeviceId, fetchCountry, ensureUser, recordGame, buildShare, updateHandle, flagEmoji, getDailyStats } from "/js/db.js";
+ import {getDeviceId, fetchCountry, ensureUser, recordGame, buildShare, updateHandle, flagEmoji, getDailyStats} from "/js/db.js";
 
   const deviceId = getDeviceId();
   const country = await fetchCountry();
@@ -503,8 +509,12 @@ pickPerson(state.mode);
   document.getElementById("calDay").textContent = day;
 })();
   
+
+</script>
+
+<script type ="module" id='lb-module">
+
 // === Inline Leaderboard Modal wiring ===
-import { supabase, flagEmoji, getDailyStats } from "/js/db.js"; // flagEmoji/getDailyStats are already exported
 
 const typeValue = "births"; // <-- change to "events" in events.html
 
@@ -629,7 +639,23 @@ lbCloseBtn?.addEventListener("click", closeLeaderboardModal);
 lbScopeGlobal?.addEventListener("click", ()=>{ lbScopeGlobal.classList.add("active"); lbScopeMyCountry.classList.remove("active"); openLeaderboardModal("global"); });
 lbScopeMyCountry?.addEventListener("click", ()=>{ lbScopeGlobal.classList.remove("active"); lbScopeMyCountry.classList.add("active"); openLeaderboardModal("country"); });
 
+// Expose modal open/close globally so game pages can call them
+window.openLeaderboardModal = async function (gameType = "births") {
+  // Show modal
+  leaderboardModal.style.display = "flex";
+
+  // Load the board scoped to this game type
+  await loadLeaderboard("global", gameType);
+
+  // You could also preload stats here if you want
+};
+
+window.closeLeaderboardModal = function () {
+  leaderboardModal.style.display = "none";
+};
+
 </script>
+  
 <!-- Leaderboard Modal -->
 <div id="lbBackdrop" class="modal-backdrop" style="display:none;"></div>
 <div id="lbModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="lbTitle" style="display:none;">
