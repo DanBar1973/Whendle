@@ -314,6 +314,66 @@ setPortraitWithFallback(img, [meta?.image, p.img], p.name);
 // Save summary fallback into state
 state.person.summary = meta?.extract || p.summary || "";
 
+  // If Daily was already played today, restore and lock UI
+if (mode === "Daily") {
+  try {
+    const seed = `${todaySeedNumber()}|births`;
+    const raw = localStorage.getItem(`whendle_result_births_${seed}`);
+    const prev = raw ? JSON.parse(raw) : null;
+
+    // Only lock if it's the same person as today's selection
+    if (prev && prev.name === p.name) {
+      state.over = true;         // block new guesses
+      state.win  = !!prev.win;
+      state.guesses = prev.guesses || [];
+      state.results = prev.results || [];
+
+      // rebuild history (no hints to keep it simple)
+      const hist = document.getElementById("history");
+      hist.innerHTML = "";
+      state.guesses.forEach((g, i) => {
+        addHistoryRow(g, state.results[i], "");
+      });
+
+      // status line
+      const s = document.getElementById("status");
+      const seconds = Math.round((prev.msElapsed||0)/1000);
+      if (prev.win) {
+        s.className = "status success";
+        s.textContent = `Correct! ${p.name} was born in ${pad4(p.year)}. (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
+      } else {
+        s.className = "status error";
+        s.textContent = `Out of tries! The correct year was ${pad4(p.year)}. (${state.guesses.length} guesses, ${seconds}s)`;
+      }
+
+      // link + CTA
+      const boardLink = document.createElement("a");
+      boardLink.href = `/leaderboard.html?type=births`;
+      boardLink.textContent = "See where you placed →";
+      boardLink.style.display = "inline-block";
+      boardLink.style.marginTop = "8px";
+      boardLink.style.color = "#60a5fa";
+      boardLink.style.fontWeight = "600";
+      s.appendChild(document.createElement("br"));
+      s.appendChild(boardLink);
+
+      // show Learn‑more
+      showLearnMore({
+        title: p.name,
+        summary: state.person.summary,
+        wiki: `https://en.wikipedia.org/wiki/${encodeURIComponent(p.name)}`
+      });
+
+      // hide rules, disable inputs
+      const rules = document.querySelector('.rules');
+      if (rules) rules.style.display = 'none';
+      document.getElementById('yearInput').disabled = true;
+      document.getElementById('submitBtn').disabled = true;
+    }
+  } catch {}
+}
+
+
   document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
   document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
   document.getElementById("title").textContent=p.name; document.title=`Whendle — Births (${p.name})`;
@@ -393,19 +453,18 @@ function glowPortraitOnce(){
 async function finishRound(){
   const s = document.getElementById("status");
 
-  // compute once for both win/loss
+  // ⬇️ compute once for both win/fail
   const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
-  const seconds = Math.round(msElapsed / 1000);
+  const seconds = Math.round(msElapsed/1000);
 
-  if (state.win){
+  if (state.win) {
     s.className = "status success";
     s.textContent = `Correct! ${state.person.name} was born in ${state.answer}. (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
-    celebrateWin();
-    glowPortraitOnce();
   } else {
     s.className = "status error";
-    s.textContent = `Out of tries! The correct year was ${state.answer}. (${state.guesses.length} ${state.guesses.length===1?'guess':'guesses'}, ${seconds}s)`;
+    s.textContent = `Out of tries! The correct year was ${state.answer}. (${state.guesses.length} guesses, ${seconds}s)`;
   }
+
 
   // “See where you placed”
   const boardLink = document.createElement("a");
@@ -418,6 +477,22 @@ async function finishRound(){
   boardLink.style.fontWeight = "600";
   s.appendChild(document.createElement("br"));
   s.appendChild(boardLink);
+
+  // Persist today's daily result so we can lock the game
+try {
+  const seed = `${todaySeedNumber()}|births`;
+  const msElapsed = Math.max(0, Math.round(performance.now() - (state.startedAt ?? performance.now())));
+  const payload = {
+    name: state.person.name,
+    win: state.win,
+    tries: state.guesses.length,
+    msElapsed,
+    guesses: state.guesses.slice(),
+    results: state.results.slice()
+  };
+  localStorage.setItem(`whendle_result_births_${seed}`, JSON.stringify(payload));
+} catch {}
+
 
   // Attach modal opener instead of navigating away
   boardLink.addEventListener("click", (e) => {
