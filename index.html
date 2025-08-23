@@ -291,6 +291,13 @@ async function pickPerson(mode){
   }
   const p=PEOPLE[idx];
   state.person=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false; state.startedAt = performance.now();
+    // re-enable controls for a fresh round
+  const yearInput = document.getElementById('yearInput');
+  const submitBtn = document.getElementById('submitBtn');
+  if (yearInput) yearInput.disabled = false;
+  if (submitBtn) submitBtn.disabled = false;
+  state.over = false; // make sure new round is playable
+
   const img=document.getElementById("portrait");
 document.getElementById("title").textContent = p.name;
 
@@ -322,7 +329,7 @@ if (mode === "Daily") {
     const prev = raw ? JSON.parse(raw) : null;
 
     // Only lock if it's the same person as today's selection
-    if (prev && prev.name === p.name) {
+    if (prev) {
       state.over = true;         // block new guesses
       state.win  = !!prev.win;
       state.guesses = prev.guesses || [];
