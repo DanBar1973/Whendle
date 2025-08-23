@@ -139,8 +139,6 @@ if (scope === "country" && myCountry) {
   query = query.eq("users.country", myCountry);
 }
 
-
-  }
   const { data, error } = await query;
   if (error) { console.error(error); setRows([]); return; }
   const rows = data.map(d => ({
