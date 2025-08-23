@@ -409,7 +409,8 @@ async function finishRound(){
 
   // “See where you placed”
   const boardLink = document.createElement("a");
-  boardLink.href = "/leaderboard.html?type=births";
+  boardLink.href="#";
+  boardLink.addEventListener("click", (e)=>{ e.preventDefault(); window.openLeaderboardModal("global"); });
   boardLink.textContent = "See where you placed →";
   boardLink.style.display = "inline-block";
   boardLink.style.marginTop = "8px";
@@ -470,7 +471,7 @@ pickPerson(state.mode);
 
 <!-- Supabase hook block -->
 <script type="module">
-  import { getDeviceId, fetchCountry, ensureUser, recordGame, buildShare, updateHandle } from "/js/db.js";
+  import { getDeviceId, fetchCountry, ensureUser, recordGame, buildShare, updateHandle, flagEmoji, getDailyStats } from "/js/db.js";
 
   const deviceId = getDeviceId();
   const country = await fetchCountry();
@@ -501,8 +502,174 @@ pickPerson(state.mode);
   document.getElementById("calMonth").textContent = month;
   document.getElementById("calDay").textContent = day;
 })();
+  
+// === Inline Leaderboard Modal wiring ===
+import { supabase, flagEmoji, getDailyStats } from "/js/db.js"; // flagEmoji/getDailyStats are already exported
+
+const typeValue = "births"; // <-- change to "events" in events.html
+
+// DOM refs
+const lbBackdrop = document.getElementById("lbBackdrop");
+const lbModal = document.getElementById("lbModal");
+const lbCloseBtn = document.getElementById("lbCloseBtn");
+const lbRows = document.getElementById("lbRows");
+const lbEmpty = document.getElementById("lbEmpty");
+const lbMeta = document.getElementById("lbMeta");
+const lbScopeGlobal = document.getElementById("lbScopeGlobal");
+const lbScopeMyCountry = document.getElementById("lbScopeMyCountry");
+const lbMyStats = document.getElementById("lbMyStats");
+const lbStreakCurrent = document.getElementById("lbStreakCurrent");
+const lbStreakMax = document.getElementById("lbStreakMax");
+const lbWinsTotal = document.getElementById("lbWinsTotal");
+const lbWinPct = document.getElementById("lbWinPct");
+const lbOpenFull = document.getElementById("lbOpenFull");
+
+let _lb = { myCountry: null, userId: null };
+
+function msFmt(ms){
+  if(!ms && ms!==0) return "—";
+  const s=(ms/1000);
+  return s<60 ? s.toFixed(1)+"s" : (Math.floor(s/60)+"m "+Math.round(s%60)+"s");
+}
+function todaySeedFor(type){
+  const d = new Date();
+  const seed = Number(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`);
+  return `${seed}|${type}`;
+}
+function setLbRows(list){
+  lbRows.innerHTML = "";
+  if (!list || !list.length) { lbEmpty.style.display="block"; return; }
+  lbEmpty.style.display="none";
+  list.forEach((r,i)=>{
+    const tr = document.createElement("tr");
+    const flag = r.country ? flagEmoji(r.country) : "🏳️";
+    tr.innerHTML = `<td style="padding:10px 12px;">${i+1}</td>
+                    <td style="padding:10px 12px;">${flag} ${r.handle||"Player"}</td>
+                    <td style="padding:10px 12px;">${r.tries}</td>
+                    <td style="padding:10px 12px;">${msFmt(r.ms_elapsed)}</td>`;
+    lbRows.appendChild(tr);
+  });
+}
+function renderMyStatsBox(stats){
+  if (!stats) { lbMyStats.style.display="none"; return; }
+  lbStreakCurrent.textContent = stats.currentStreak;
+  lbStreakMax.textContent = stats.maxStreak;
+  lbWinsTotal.textContent = stats.totalWins;
+  lbWinPct.textContent = (stats.winPct||0) + "%";
+  lbMyStats.style.display = "flex";
+}
+
+async function loadLb(scope){
+  const seed = todaySeedFor(typeValue);
+  lbMeta.textContent = `Mode: Daily • ${typeValue} • seed ${seed}` + (scope==="country" && _lb.myCountry ? ` • ${_lb.myCountry}` : "");
+  lbOpenFull.href = `/leaderboard.html?type=${typeValue}`;
+
+  let query = supabase.from("games")
+    .select("tries, ms_elapsed, users:users(handle, country)")
+    .eq("game_type", typeValue)
+    .eq("run_mode", "daily")
+    .eq("seed", seed)
+    .eq("won", true)
+    .order("tries", { ascending: true })
+    .order("ms_elapsed", { ascending: true, nullsFirst: false })
+    .not("ms_elapsed", "is", null)
+    .limit(100);
+
+  if (scope === "country" && _lb.myCountry) {
+    query = query.eq("users.country", _lb.myCountry);
+  }
+
+  const { data, error } = await query;
+  if (error) { console.error(error); setLbRows([]); return; }
+  const rows = (data||[]).map(d => ({
+    handle: d.users.handle,
+    country: d.users.country,
+    tries: d.tries,
+    ms_elapsed: d.ms_elapsed
+  }));
+  setLbRows(rows);
+}
+
+async function openLeaderboardModal(scope="global"){
+  try {
+    // Reuse identity/country you already created in this module
+    // (these exist in this module scope already)
+    _lb.myCountry = country || null;   // 'country' is from your existing module vars
+    _lb.userId = userId || null;       // 'userId' is from your existing module vars
+
+    // Personal stats (for this type)
+    const stats = _lb.userId ? await getDailyStats(_lb.userId, typeValue) : null;
+    renderMyStatsBox(stats);
+
+    // Load rows
+    await loadLb(scope);
+
+    // Toggle pills UI
+    lbScopeGlobal.classList.toggle("active", scope === "global");
+    lbScopeMyCountry.classList.toggle("active", scope === "country");
+
+    // Show modal
+    lbBackdrop.style.display = "block";
+    lbModal.style.display = "grid";
+  } catch (e) {
+    console.warn("openLeaderboardModal failed", e);
+  }
+}
+function closeLeaderboardModal(){
+  lbBackdrop.style.display = "none";
+  lbModal.style.display = "none";
+}
+
+// expose
+window.openLeaderboardModal = openLeaderboardModal;
+
+// events
+lbBackdrop?.addEventListener("click", closeLeaderboardModal);
+lbCloseBtn?.addEventListener("click", closeLeaderboardModal);
+lbScopeGlobal?.addEventListener("click", ()=>{ lbScopeGlobal.classList.add("active"); lbScopeMyCountry.classList.remove("active"); openLeaderboardModal("global"); });
+lbScopeMyCountry?.addEventListener("click", ()=>{ lbScopeGlobal.classList.remove("active"); lbScopeMyCountry.classList.add("active"); openLeaderboardModal("country"); });
 
 </script>
+<!-- Leaderboard Modal -->
+<div id="lbBackdrop" class="modal-backdrop" style="display:none;"></div>
+<div id="lbModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="lbTitle" style="display:none;">
+  <div class="panel" style="max-width:820px;">
+    <div class="head">
+      <h3 id="lbTitle" style="margin:0;">Today’s Leaderboard</h3>
+      <button class="close" id="lbCloseBtn" type="button">Close</button>
+    </div>
+
+    <!-- scope pills -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <span class="pill active" id="lbScopeGlobal">Global</span>
+      <span class="pill" id="lbScopeMyCountry">My Country</span>
+    </div>
+
+    <!-- your stats -->
+    <div id="lbMyStats" style="display:none; margin:4px 0 12px; display:flex; gap:8px; flex-wrap:wrap;">
+      <span class="pill"><strong id="lbStreakCurrent">0</strong> Current Streak</span>
+      <span class="pill"><strong id="lbStreakMax">0</strong> Max Streak</span>
+      <span class="pill"><strong id="lbWinsTotal">0</strong> Total Wins</span>
+      <span class="pill"><strong id="lbWinPct">0%</strong> Win %</span>
+    </div>
+
+    <!-- table -->
+    <div class="card" style="padding:0; background:transparent; border:none;">
+      <table style="width:100%;border-collapse:separate;border-spacing:0 8px;">
+        <thead>
+          <tr><th style="padding:10px 12px;">#</th><th style="padding:10px 12px;">Player</th><th style="padding:10px 12px;">Tries</th><th style="padding:10px 12px;">Time</th></tr>
+        </thead>
+        <tbody id="lbRows"></tbody>
+      </table>
+      <div id="lbEmpty" class="muted" style="display:none;margin-top:8px;">No results yet.</div>
+    </div>
+
+    <div class="foot" style="justify-content:space-between;">
+      <a id="lbOpenFull" class="wiki" target="_blank" rel="noopener">Open full page ↗</a>
+      <div class="muted" id="lbMeta"></div>
+    </div>
+  </div>
+</div>
 
 <button id="learnMoreBtn" class="learnmore-btn" type="button">Learn more ↗</button>
 <div id="modalBackdrop" class="modal-backdrop"></div>
