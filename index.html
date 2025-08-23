@@ -291,7 +291,33 @@ async function pickPerson(mode){
   }
   const p=PEOPLE[idx];
   state.person=p; state.answer=pad4(p.year); state.guesses=[]; state.results=[]; state.over=false; state.win=false; state.startedAt = performance.now();
-    // re-enable controls for a fresh round
+    // keep the selected mode in state
+state.mode = mode;
+
+// re-enable controls for a fresh round
+const yearInput = document.getElementById('yearInput');
+const submitBtn = document.getElementById('submitBtn');
+if (yearInput) yearInput.disabled = false;
+if (submitBtn) submitBtn.disabled = false;
+state.over = false;
+
+// reset UI for the new round
+document.getElementById("history").innerHTML = "";
+document.getElementById("status").textContent = "";
+document.getElementById("reveal").style.display = "none";
+document.getElementById("summary").textContent = "";
+
+// set heading/title once
+document.getElementById("title").textContent = p.name;
+document.title = `Whendle — Births (${p.name})`;
+
+// show rules; hide Learn More CTA for fresh round
+const rules = document.querySelector(".rules");
+if (rules) rules.style.display = "";
+hideLearnMore();
+
+  
+  // re-enable controls for a fresh round
   const yearInput = document.getElementById('yearInput');
   const submitBtn = document.getElementById('submitBtn');
   if (yearInput) yearInput.disabled = false;
@@ -376,14 +402,13 @@ if (mode === "Daily") {
       if (rules) rules.style.display = 'none';
       document.getElementById('yearInput').disabled = true;
       document.getElementById('submitBtn').disabled = true;
+
+      return;
     }
   } catch {}
 }
 
 
-  document.getElementById("history").innerHTML=""; document.getElementById("status").textContent="";
-  document.getElementById("reveal").style.display="none"; document.getElementById("summary").textContent="";
-  document.getElementById("title").textContent=p.name; document.title=`Whendle — Births (${p.name})`;
 }
 
 async function fetchSummary(name,fallback){
