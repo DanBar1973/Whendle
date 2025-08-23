@@ -39,6 +39,12 @@
 
   <div class="card">
     <div id="meta" class="muted" style="margin-bottom:8px;"></div>
+<div id="myStats" style="display:none; margin:8px 0 12px; display:flex; gap:8px; flex-wrap:wrap;">
+  <span class="pill"><strong id="streakCurrent">0</strong> Current Streak</span>
+  <span class="pill"><strong id="streakMax">0</strong> Max Streak</span>
+  <span class="pill"><strong id="winsTotal">0</strong> Total Wins</span>
+  <span class="pill"><strong id="winPct">0%</strong> Win %</span>
+</div>
 
     <!-- Handle notice appears if user has no handle -->
     <div id="handleNotice" class="muted hint" style="display:none;margin:8px 0 12px;">
@@ -72,7 +78,8 @@
 </div>
 
 <script type="module">
-import { supabase, getDeviceId, fetchCountry, ensureUser, flagEmoji } from "/js/db.js";
+  
+import { supabase, getDeviceId, fetchCountry, ensureUser, flagEmoji, getDailyStats } from "/js/db.js";
 
 const params = new URLSearchParams(location.search);
 const type = params.get("type") || "births"; // births | events
@@ -111,6 +118,16 @@ function setRows(list){
     tr.innerHTML = `<td>${i+1}</td><td>${flag} ${r.handle||"Player"}</td><td>${r.tries}</td><td>${msFmt(r.ms_elapsed)}</td>`;
     rowsEl.appendChild(tr);
   });
+}
+
+function renderMyStats(s) {
+  const box = document.getElementById("myStats");
+  if (!box) return;
+  document.getElementById("streakCurrent").textContent = s.currentStreak;
+  document.getElementById("streakMax").textContent     = s.maxStreak;
+  document.getElementById("winsTotal").textContent     = s.totalWins;
+  document.getElementById("winPct").textContent        = (s.winPct || 0) + "%";
+  box.style.display = "flex";
 }
 
 function todaySeedFor(type){
@@ -206,6 +223,13 @@ async function init(){
   myCountry = await fetchCountry();
   userId = await ensureUser(deviceId, myCountry);
   await ensureHandlePrompt();
+  try {
+  const stats = await getDailyStats(userId, type); // type = 'births' | 'events'
+  renderMyStats(stats);
+} catch (e) {
+  console.warn("stats load failed", e);
+}
+
   await loadLeaderboard("global");
 }
 
