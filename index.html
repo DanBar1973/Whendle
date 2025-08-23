@@ -509,6 +509,12 @@ pickPerson(state.mode);
   document.getElementById("calDay").textContent = day;
 })();
   
+// Fallback: if the overlay script didn't wire up, open the full page.
+if (!window.openLeaderboardModal) {
+  window.openLeaderboardModal = (gameType = "births") => {
+    location.href = `/leaderboard.html?type=${gameType}`;
+  };
+}
 
 </script>
 
