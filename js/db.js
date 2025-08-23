@@ -62,6 +62,82 @@ export function flagEmoji(cc) {
   const codePoints = [...cc.toUpperCase()].map((c) => 0x1f1e6 + (c.charCodeAt(0) - 65));
   return String.fromCodePoint(...codePoints);
 }
+// ---- Daily stats helpers (streaks, wins, win %) ----
+
+// Parse "YYYYMMDD" into a UTC Date (so DST/locale doesn't bite us)
+function _parseDayUTC(yyyymmdd) {
+  const y = +yyyymmdd.slice(0, 4);
+  const m = +yyyymmdd.slice(4, 6) - 1; // 0-based
+  const d = +yyyymmdd.slice(6, 8);
+  return new Date(Date.UTC(y, m, d));
+}
+
+// Compute stats from a list of rows: [{ seed: "YYYYMMDD|type", won: boolean }, ...]
+export function computeDailyStats(rows) {
+  if (!rows || !rows.length) {
+    return { currentStreak: 0, maxStreak: 0, totalWins: 0, totalPlayed: 0, winPct: 0 };
+  }
+
+  // Consolidate by day (win if ANY row that day was a win)
+  const byDay = new Map(); // key: "YYYYMMDD" -> { won: boolean }
+  for (const r of rows) {
+    const dateStr = String(r.seed).split("|")[0];
+    const entry = byDay.get(dateStr) || { won: false };
+    entry.won = entry.won || !!r.won;
+    byDay.set(dateStr, entry);
+  }
+
+  const days = [...byDay.keys()].sort(); // "YYYYMMDD" strings ascending
+  const totalPlayed = days.length;
+  const totalWins = days.reduce((acc, k) => acc + (byDay.get(k).won ? 1 : 0), 0);
+  const winPct = totalPlayed ? Math.round((totalWins / totalPlayed) * 100) : 0;
+
+  // Streaks with gap detection (missing day breaks)
+  let maxStreak = 0;
+  let curStreak = 0;
+  let prevDate = null;
+
+  for (const k of days) {
+    const dt = _parseDayUTC(k);
+    if (prevDate) {
+      const diff = Math.round((dt - prevDate) / 86400000);
+      if (diff !== 1) curStreak = 0; // gap resets
+    }
+    if (byDay.get(k).won) {
+      curStreak += 1;
+      maxStreak = Math.max(maxStreak, curStreak);
+    } else {
+      curStreak = 0;
+    }
+    prevDate = dt;
+  }
+
+  // If last played day isn't today or yesterday, streak should be 0 (missed days at the end)
+  const lastPlayed = _parseDayUTC(days[days.length - 1]);
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const gapToToday = Math.round((todayUTC - lastPlayed) / 86400000);
+  if (gapToToday >= 2) curStreak = 0;
+
+  return { currentStreak: curStreak, maxStreak, totalWins, totalPlayed, winPct };
+}
+
+// Fetch this user's DAILY rows for one game type, then compute stats
+export async function getDailyStats(userId, gameType) {
+  const { data, error } = await supabase
+    .from("games")
+    .select("seed, won")
+    .eq("user_id", userId)
+    .eq("game_type", gameType)
+    .eq("run_mode", "daily")
+    .order("seed", { ascending: true });
+
+  if (error) {
+    console.error("getDailyStats error:", error);
+    return { currentStreak: 0, maxStreak: 0, totalWins: 0, totalPlayed: 0, winPct: 0 };
+  }
+  return computeDailyStats(data || []);
+}
 
 // Record a completed game (Daily or Practice)
 export async function recordGame({
