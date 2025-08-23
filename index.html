@@ -301,6 +301,8 @@ if (yearInput) yearInput.disabled = false;
 if (submitBtn) submitBtn.disabled = false;
 state.over = false;
 
+  const img = document.getElementById("portrait");
+
 // reset UI for the new round
 document.getElementById("history").innerHTML = "";
 document.getElementById("status").textContent = "";
@@ -316,23 +318,6 @@ const rules = document.querySelector(".rules");
 if (rules) rules.style.display = "";
 hideLearnMore();
 
-  
-  // re-enable controls for a fresh round
-  const yearInput = document.getElementById('yearInput');
-  const submitBtn = document.getElementById('submitBtn');
-  if (yearInput) yearInput.disabled = false;
-  if (submitBtn) submitBtn.disabled = false;
-  state.over = false; // make sure new round is playable
-
-  const img=document.getElementById("portrait");
-document.getElementById("title").textContent = p.name;
-
-  // Re-show the rules for a fresh round and hide the CTA until the end
-const rules = document.querySelector('.rules');
-if (rules) rules.style.display = '';
-hideLearnMore();
-
-document.title = `Whendle — Births (${p.name})`;
 
 // Try Wikipedia first
 const meta = await fetchWikiMeta(p.name);
