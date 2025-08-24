@@ -616,6 +616,14 @@ if (!window.openLeaderboardModal) {
 
 const typeValue = "births"; // <-- change to "events" in events.html
 
+function ordinal(n){const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]);}
+function prettyDateFromSeed(seed){
+  const y = Number(seed.slice(0,4)), m = Number(seed.slice(4,6))-1, d = Number(seed.slice(6,8));
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  return `${ordinal(d)} ${months[m]} ${y}`;
+}
+function niceType(t){ return t === "events" ? "Events" : "Births"; }
+
 // DOM refs
 const lbBackdrop = document.getElementById("lbBackdrop");
 const lbModal = document.getElementById("lbModal");
@@ -669,7 +677,10 @@ function renderMyStatsBox(stats){
 
 async function loadLb(scope){
   const seed = todaySeedFor(typeValue);
-  lbMeta.textContent = `Mode: Daily • ${typeValue} • seed ${seed}` + (scope==="country" && _lb.myCountry ? ` • ${_lb.myCountry}` : "");
+  const title = niceType(typeValue);
+const pretty = prettyDateFromSeed(seed);
+lbMeta.textContent = `${title} — ${pretty}`;
+
   lbOpenFull.href = `/leaderboard.html?type=${typeValue}`;
 
   let query = supabase.from("games")
@@ -770,12 +781,13 @@ window.closeLeaderboardModal = function () {
     </div>
 
     <!-- your stats -->
-    <div id="lbMyStats" style="display:none; margin:4px 0 12px; display:flex; gap:8px; flex-wrap:wrap;">
-      <span class="pill"><strong id="lbStreakCurrent">0</strong> Current Streak</span>
-      <span class="pill"><strong id="lbStreakMax">0</strong> Max Streak</span>
-      <span class="pill"><strong id="lbWinsTotal">0</strong> Total Wins</span>
-      <span class="pill"><strong id="lbWinPct">0%</strong> Win %</span>
-    </div>
+   <div id="lbMyStats" style="display:none; margin:4px 0 12px; display:flex; gap:8px; flex-wrap:wrap;">
+    <span class="pill">Current Streak: <strong id="lbStreakCurrent">0</strong></span>
+    <span class="pill">Max Streak: <strong id="lbStreakMax">0</strong></span>
+    <span class="pill">Total Wins: <strong id="lbWinsTotal">0</strong></span>
+    <span class="pill">Win %: <strong id="lbWinPct">0%</strong></span>
+  </div>
+
 
     <!-- table -->
     <div class="card" style="padding:0; background:transparent; border:none;">
