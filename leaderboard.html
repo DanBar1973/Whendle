@@ -99,6 +99,18 @@ const saveHandleBtn = document.getElementById("saveHandle");
 const cancelHandleBtn = document.getElementById("cancelHandle");
 
 let myCountry = null;
+
+  // --- pretty date helpers ---
+function ordinal(n){const s=["th","st","nd","rd"], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]);}
+function prettyDateFromSeed(seed){
+  // seed like "20250824|births" → "24th August 2025"
+  const y = Number(seed.slice(0,4)), m = Number(seed.slice(4,6))-1, d = Number(seed.slice(6,8));
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  return `${ordinal(d)} ${months[m]} ${y}`;
+}
+function niceType(t){ return t === "events" ? "Events" : "Births"; }
+
+  
 let userId = null;
 let myHandle = null;
 
@@ -138,8 +150,10 @@ function todaySeedFor(type){
 
 async function loadLeaderboard(scope){
   const seed = todaySeedFor(type);
-  meta.textContent = `Mode: Daily • ${type} • seed ${seed}` + (scope==="country" && myCountry ? ` • ${myCountry}` : "");
-  
+  const title = niceType(type);
+const pretty = prettyDateFromSeed(seed);
+meta.textContent = `${title} — ${pretty}`;
+
 let query = supabase.from("games")
   .select("tries, ms_elapsed, users:users(handle, country)") // keep the inner join alias
   .eq("game_type", type)
