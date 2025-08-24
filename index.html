@@ -581,6 +581,11 @@ pickPerson(state.mode);
 const displayName =
   (window.ensureDisplayName && window.ensureDisplayName()) || "Player";
 await updateHandle(userId, displayName);
+const res = await updateHandle(userId, displayName);
+if (res?.error === "banned") {
+  // fall back to a neutral handle (or skip updating)
+  await updateHandle(userId, "Player");
+}
 
 
   // Expose to game script
