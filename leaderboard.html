@@ -79,7 +79,7 @@
 
 <script type="module">
   
-import { supabase, getDeviceId, fetchCountry, ensureUser, flagEmoji, getDailyStats } from "/js/db.js";
+import { supabase, getDeviceId, fetchCountry, ensureUser, flagEmoji, getDailyStats, safeDisplayHandle } from "/js/db.js";
 
 const params = new URLSearchParams(location.search);
 const type = params.get("type") || "births"; // births | events
@@ -127,8 +127,12 @@ function setRows(list){
   list.forEach((r,i)=>{
     const tr = document.createElement("tr");
     const flag = r.country ? flagEmoji(r.country) : "🏳️";
-    tr.innerHTML = `<td>${i+1}</td><td>${flag} ${r.handle||"Player"}</td><td>${r.tries}</td><td>${msFmt(r.ms_elapsed)}</td>`;
-    rowsEl.appendChild(tr);
+    const name = safeDisplayHandle(r.handle);
+    tr.innerHTML = `<td>${i+1}</td>
+                    <td>${flag} ${name}</td>
+                    <td>${r.tries}</td>
+                    <td>${msFmt(r.ms_elapsed)}</td>`;
+rowsEl.appendChild(tr);
   });
 }
 
@@ -195,9 +199,9 @@ function validateHandle(h){
     return "Handle must be 3–20 chars: letters, numbers, underscore.";
   }
   // tiny profanity guard (expand later or use a lib)
-  const bad = ["fuck","shit","cunt","nazi","hitler","rape"];
+  const bad = ["fuck","shit","cunt","nazi","hitler","rape", "wanker"];
   const lower = h.toLowerCase();
-  if (bad.some(b => lower.includes(b))) return "Please choose a different handle.";
+  if (bad.some(b => lower.includes(b))) return "Keep it clean. Please choose a different handle.";
   return null;
 }
 
