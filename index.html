@@ -66,20 +66,24 @@ h1 .calendar-icon {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 2.4em;          /* fixed width */
+  height: 2.4em;         /* fixed height → makes it square */
   font-size: 0.7em;        /* smaller than the 1.4rem h1 */
   line-height: 1;
   margin-right: 6px;       /* space between badge and title */
   background: #2563eb;
   color: white;
   border-radius: 6px;
-  padding: 2px 4px;
+  padding: 2px 0;
+      /* new line */
+  vertical-align: middle;
 }
 .cal-month {
-  font-size: 0.6em;
+  font-size: 0.55em;
   text-transform: uppercase;
 }
 .cal-day {
-  font-size: 1.2em;
+  font-size: 1em;
   font-weight: 700;
 }
 
