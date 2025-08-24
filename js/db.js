@@ -19,12 +19,29 @@ export function getDeviceId() {
     return crypto.randomUUID();
   }
 }
+// --- Handle safety helpers ---
+export function isBannedHandle(h) {
+  if (!h) return false;
+  const bad = ["fuck","shit","cunt","nazi","hitler","rape"];
+  const lower = String(h).toLowerCase();
+  return bad.some(b => lower.includes(b));
+}
+
+// if you ever want to mask on display:
+export function safeDisplayHandle(h) {
+  return isBannedHandle(h) ? "Player" : (h || "Player");
+}
 
 export async function updateHandle(userId, handle) {
-  if (!userId || !handle) return;
+  if (!userId || !handle) return { ok:false, error:"missing" };
+  if (isBannedHandle(handle)) {
+    return { ok:false, error:"banned" };
+  }
   const { error } = await supabase.from("users").update({ handle }).eq("id", userId);
-  if (error) console.warn("updateHandle error:", error);
+  if (error) return { ok:false, error };
+  return { ok:true };
 }
+
 
 // Optionally fetch country via Vercel (we’ll add /api/country below)
 export async function fetchCountry() {
