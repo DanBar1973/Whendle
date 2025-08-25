@@ -19,6 +19,9 @@
   .muted{color:var(--muted)}
   .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid #263043;background:#0f1420;color:var(--muted);cursor:pointer}
   .pill.active{background:#2563eb;color:white;border-color:#1e40af}
+  <div style="display:flex;gap:8px;margin:8px 0 12px;justify-content:flex-end;">
+    <button id="changeHandle" class="btn-ghost">Change handle</button>
+  </div>
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:20}
   .modal .inner{background:#151923;border:1px solid #1f2634;border-radius:12px;padding:16px;max-width:420px;width:94%}
   input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #263043;background:#0f1420;color:var(--text)}
@@ -97,6 +100,7 @@ const handleError = document.getElementById("handleError");
 const openHandleBtn = document.getElementById("openHandle");
 const saveHandleBtn = document.getElementById("saveHandle");
 const cancelHandleBtn = document.getElementById("cancelHandle");
+const changeHandleBtn = document.getElementById("changeHandle");
 
 let myCountry = null;
 
@@ -266,6 +270,7 @@ openHandleBtn.addEventListener("click", ()=>showHandleModal(true));
 cancelHandleBtn.addEventListener("click", ()=>showHandleModal(false));
 saveHandleBtn.addEventListener("click", saveHandle);
 handleInput.addEventListener("keydown", e => { if (e.key === "Enter") saveHandle(); });
+changeHandleBtn?.addEventListener("click", ()=>showHandleModal(true));
 
 init();
 </script>
