@@ -19,9 +19,6 @@
   .muted{color:var(--muted)}
   .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid #263043;background:#0f1420;color:var(--muted);cursor:pointer}
   .pill.active{background:#2563eb;color:white;border-color:#1e40af}
-  <div style="display:flex;gap:8px;margin:8px 0 12px;justify-content:flex-end;">
-    <button id="changeHandle" class="btn-ghost">Change handle</button>
-  </div>
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:20}
   .modal .inner{background:#151923;border:1px solid #1f2634;border-radius:12px;padding:16px;max-width:420px;width:94%}
   input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #263043;background:#0f1420;color:var(--text)}
@@ -81,13 +78,7 @@ const meta = document.getElementById("meta");
 const rowsEl = document.getElementById("rows");
 const emptyEl = document.getElementById("empty");
 const handleNotice = document.getElementById("handleNotice");
-const handleModal = document.getElementById("handleModal");
-const handleInput = document.getElementById("handleInput");
-const handleError = document.getElementById("handleError");
 const openHandleBtn = document.getElementById("openHandle");
-const saveHandleBtn = document.getElementById("saveHandle");
-const cancelHandleBtn = document.getElementById("cancelHandle");
-const changeHandleBtn = document.getElementById("changeHandle");
 
 let myCountry = null;
 
@@ -176,14 +167,6 @@ if (scope === "country" && myCountry) {
   setRows(rows);
 }
 
-function showHandleModal(show=true){
-  handleModal.style.display = show ? "flex" : "none";
-  if (show) {
-    handleInput.value = myHandle || "";
-    handleError.textContent = "";
-    setTimeout(()=>handleInput.focus(), 0);
-  }
-}
 
 function validateHandle(h){
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(h)) {
@@ -202,29 +185,6 @@ async function ensureHandlePrompt(){
   if (error) { console.error(error); return; }
   myHandle = data?.handle || null;
   handleNotice.style.display = myHandle ? "none" : "block";
-}
-
-async function saveHandle(){
-  const h = (handleInput.value || "").trim();
-  const err = validateHandle(h);
-  if (err) { handleError.textContent = err; return; }
-
-  const { error } = await supabase.from("users").update({ handle: h }).eq("id", userId);
-  if (error) {
-    if ((error.code === "23505") || /duplicate/i.test(error.message)) {
-      handleError.textContent = "That handle is taken. Try another.";
-    } else {
-      handleError.textContent = "Could not save handle. Please try again.";
-      console.error(error);
-    }
-    return;
-  }
-  myHandle = h;
-  handleNotice.style.display = "none";
-  showHandleModal(false);
-  // Reload board so your new name appears if you’re on it
-  const activeCountry = scopeMyCountry.classList.contains("active");
-  await loadLeaderboard(activeCountry ? "country" : "global");
 }
 
 async function init(){
@@ -253,11 +213,6 @@ scopeMyCountry.addEventListener("click", ()=>{
   loadLeaderboard("country");
 });
 
-openHandleBtn.addEventListener("click", ()=>showHandleModal(true));
-cancelHandleBtn.addEventListener("click", ()=>showHandleModal(false));
-saveHandleBtn.addEventListener("click", saveHandle);
-handleInput.addEventListener("keydown", e => { if (e.key === "Enter") saveHandle(); });
-changeHandleBtn?.addEventListener("click", ()=>showHandleModal(true));
 
 init();
   const pickHandleBtn = document.getElementById("pickHandleBtn");
@@ -295,7 +250,8 @@ async function promptForHandle() {
     document.getElementById("scopeMyCountry")?.classList.contains("active") ? "country" : "global"
   );
 }
-
+openHandleBtn?.addEventListener("click", promptForHandle);
+const pickHandleBtn = document.getElementById("pickHandleBtn");
 pickHandleBtn.addEventListener("click", promptForHandle);
 
 </script>
