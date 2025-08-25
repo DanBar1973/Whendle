@@ -168,16 +168,7 @@ if (scope === "country" && myCountry) {
 }
 
 
-function validateHandle(h){
-  if (!/^[a-zA-Z0-9_]{3,20}$/.test(h)) {
-    return "Handle must be 3–20 chars: letters, numbers, underscore.";
-  }
-  // tiny profanity guard (expand later or use a lib)
-  const bad = ["fuck","shit","cunt","nazi","hitler","rape", "wanker"];
-  const lower = h.toLowerCase();
-  if (bad.some(b => lower.includes(b))) return "Keep it clean. Please choose a different handle.";
-  return null;
-}
+
 
 async function ensureHandlePrompt(){
   // Read current user's handle
@@ -251,8 +242,8 @@ async function promptForHandle() {
   );
 }
 openHandleBtn?.addEventListener("click", promptForHandle);
-const pickHandleBtn = document.getElementById("pickHandleBtn");
-pickHandleBtn.addEventListener("click", promptForHandle);
+document.getElementById("pickHandleBtn")?.addEventListener("click", promptForHandle);
+
 
 </script>
   <button id="pickHandleBtn"
