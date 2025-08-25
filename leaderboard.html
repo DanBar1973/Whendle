@@ -273,6 +273,57 @@ handleInput.addEventListener("keydown", e => { if (e.key === "Enter") saveHandle
 changeHandleBtn?.addEventListener("click", ()=>showHandleModal(true));
 
 init();
+  const pickHandleBtn = document.getElementById("pickHandleBtn");
+
+async function promptForHandle() {
+  // `myHandle` and `userId` already exist in your script; if not, define:
+  // let myHandle = myHandle ?? null;
+
+  const h = (prompt("Choose a leaderboard handle (3–20 letters/numbers/_):", myHandle || "") || "").trim();
+  if (!h) return;
+
+  // basic validation
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(h)) {
+    alert("Handle must be 3–20 chars: letters, numbers, underscore.");
+    return;
+  }
+
+  // tiny profanity guard (same list as before)
+  const bad = ["fuck","shit","cunt","nazi","hitler","rape"];
+  const lower = h.toLowerCase();
+  if (bad.some(b => lower.includes(b))) {
+    alert("Please choose a different handle.");
+    return;
+  }
+
+  const { error } = await supabase.from("users").update({ handle: h }).eq("id", userId);
+  if (error) {
+    alert("Could not save handle. Try another.");
+    console.error(error);
+    return;
+  }
+
+  myHandle = h;           // reflect locally
+  await loadLeaderboard(  // refresh visible table
+    document.getElementById("scopeMyCountry")?.classList.contains("active") ? "country" : "global"
+  );
+}
+
+pickHandleBtn.addEventListener("click", promptForHandle);
+
 </script>
+  <button id="pickHandleBtn"
+  style="
+    position:fixed; right:16px; bottom:16px; z-index:50;
+    background:linear-gradient(180deg,#3b82f6,#2563eb);
+    border:1px solid #1e40af; color:white; font-weight:700;
+    padding:12px 14px; border-radius:999px; cursor:pointer;
+    box-shadow:0 10px 20px rgba(0,0,0,.35);
+  "
+  type="button"
+>
+  Pick a handle ✏️
+</button>
+
 </body>
 </html>
